@@ -1,1 +1,1 @@
-Проект Connect Cart
+Проект Connect Cart на Flutter
