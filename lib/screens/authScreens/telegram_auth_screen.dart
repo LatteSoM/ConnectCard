@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:connect_card/models/user_model.dart';
+import 'package:connect_card/screens/profile_screen.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
@@ -56,7 +59,8 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
 
   Future<void> _getCode() async{
 
-    final codeUrl = Uri.parse('$baseUrl/auth/telegram/phone');
+    final codeUrl = Uri.parse('$baseUrl/request_code');
+    print(codeUrl);
 
     try{
       final response = await http.post(
@@ -82,7 +86,7 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
   }
 
   Future<void> _authorize() async {
-    final authUrl = Uri.parse('$baseUrl/auth/telegram/code?accountID=');
+    final authUrl = Uri.parse('$baseUrl/verify_code');
 
     try{
       final response = await http.post(
@@ -96,8 +100,16 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
       );
 
       if(response.statusCode == 200){
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        final userJson = data['user'];
+        final user = UserModel.fromJson(userJson);
         SnackbarHelper.showMessage(context, "Вы успешно авторизовались");
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => ProfileScreen(user: user)),
+          (Route<dynamic> route) => false,
+          );
+
 
       }else{
         final error = jsonDecode(response.body);

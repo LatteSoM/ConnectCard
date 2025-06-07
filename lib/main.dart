@@ -1,10 +1,10 @@
 import 'package:connect_card/screens/login_screen.dart';
+import 'package:connect_card/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 Future main() async{
   await dotenv.load(fileName: ".env");
-  print(dotenv.env['BASE_URL']);
   runApp(const MainApp());
 }
 
