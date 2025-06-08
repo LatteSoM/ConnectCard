@@ -1,0 +1,6 @@
+Короче если сделали изменения в моделях, то пишем следующее:
+alembic revision --autogenerate -m "add email and age fields"
+Залупа выше создаст миграцию
+Далее:
+alembic upgrade head
+Эта фигня применит миграцию
