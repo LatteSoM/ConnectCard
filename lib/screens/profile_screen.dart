@@ -76,7 +76,6 @@ class _ProfileScreenState extends State<ProfileScreen>{
             const SizedBox(height: 30),
             const Divider(color: Colors.deepPurpleAccent),
             const SizedBox(height: 20),
-            // Добавим условно еще пару строк для примера (например, контакты)
             Row(
               children: const [
                 Icon(Icons.email, color: Colors.deepPurpleAccent),
