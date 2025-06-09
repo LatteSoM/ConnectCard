@@ -15,7 +15,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: VisitCardProfile(),
+      home: LoginScreen(),
       theme: ThemeData.dark(),
     );
   }

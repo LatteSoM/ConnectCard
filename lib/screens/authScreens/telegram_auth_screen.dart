@@ -19,88 +19,60 @@ class TelegramAuthScreen extends StatefulWidget {
 class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
   final TextEditingController _phoneController = TextEditingController(text: "+7 ");
   final TextEditingController _codeController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  bool codeSent = false;
+  bool showPasswordField = false;
+  bool isLoading = false;
   final _formKey = GlobalKey<FormState>();
 
   final baseUrl = dotenv.env['BASE_URL']!;
 
-  void _showCodeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Color(0xFFE5F3FF),
-        title: Text("Введите код", style: TextStyle(color: Colors.black)),
-        content: TextField(
-          controller: _codeController,
-          keyboardType: TextInputType.number,
-          maxLength: 5,
-          decoration: InputDecoration(
-            hintText: "Код из SMS",
-            hintStyle: TextStyle(color: Colors.black54),
-          ),
-          style: TextStyle(color: Colors.black),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Text("Отмена", style: TextStyle(color: Colors.blue)),
-          ),
-          TextButton(
-            onPressed: () {
-              _authorize();
-            },
-            child: Text("Авторизоваться", style: TextStyle(color: Colors.blue)),
-          ),
-        ],
-      ),
+  Future<void> requestCode(String phone) async{
+    setState(() {
+      isLoading = true;
+    });
+    final response = await http.post(
+      Uri.parse('$baseUrl/request_code'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'phone': phone}),
     );
-  }
+    setState(() {
+      isLoading = false;
+    });
 
-  Future<void> _getCode() async{
-
-    final codeUrl = Uri.parse('$baseUrl/request_code');
-    print(codeUrl);
-
-    try{
-      final response = await http.post(
-        codeUrl,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "phone" : _phoneController.text,
-        }),
-      );
-
-      if(response.statusCode == 200){
-        final responseData = jsonDecode(response.body);
-        SnackbarHelper.showMessage(context, "Код подтверждения отправлен");
-      }else{
-        final error = jsonDecode(response.body);
-        print("Ошибка ${error['error']}");
-        SnackbarHelper.showMessage(context, "Произошла ошибка. Пожалуйста, попробуйте еще раз", isSuccess: false);
-      }
-    }catch (e){
-      print("Ошибка сети ${e}");
-      SnackbarHelper.showMessage(context, "Извините, произошла ошибка", isSuccess: false);
+    if(response.statusCode == 200){
+      setState(() {
+        codeSent = true;
+      });
+    }else{
+      SnackbarHelper.showMessage(context, "Ошибка при отправке кода", isSuccess: false);
     }
   }
 
-  Future<void> _authorize() async {
-    final authUrl = Uri.parse('$baseUrl/verify_code');
+  Future<void> verifyCode(String phone, String code) async{
+    setState(() {
+      isLoading = true;
+    });
 
-    try{
-      final response = await http.post(
-        authUrl,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "phone" : _phoneController.text,
-          "code": _codeController.text,
-          "password": "",
-        }),
-      );
+    final response = await http.post(
+      Uri.parse('$baseUrl/verify_code'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'phone': phone, 'code': code}),
+    );
 
-      if(response.statusCode == 200){
-        final Map<String, dynamic> data = jsonDecode(response.body);
+    setState(() {
+      isLoading = false;
+    });
+
+    if(response.statusCode == 200){
+      final data = jsonDecode(response.body);
+
+      if(data['need_password'] == true){
+        setState(() {
+          showPasswordField = true;
+        });
+      }else{
         final userJson = data['user'];
         final user = UserModel.fromJson(userJson);
         SnackbarHelper.showMessage(context, "Вы успешно авторизовались");
@@ -109,18 +81,42 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
           MaterialPageRoute(builder: (context) => ProfileScreen(user: user)),
           (Route<dynamic> route) => false,
           );
-
-
-      }else{
-        final error = jsonDecode(response.body);
-        print("Ошибка ${error['error']}");
-        SnackbarHelper.showMessage(context, "Произошла ошибка. Пожалуйста, попробуйте еще раз", isSuccess: false);
       }
-    }catch (e){
-      print("Ошибка сети ${e}");
-      SnackbarHelper.showMessage(context, "Извините, произошла ошибка", isSuccess: false);
+    }else{
+      SnackbarHelper.showMessage(context, "Неверный код", isSuccess: false);
     }
   }
+
+  Future<void> completeSignIn(String phone, String password) async{
+    setState(() {
+      isLoading = true;
+    });
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/complete_sign_in'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'phone': phone, 'password': password}),
+    );
+
+    setState(() {
+      isLoading = false;
+    });
+
+    if(response.statusCode == 200){
+      final Map<String, dynamic> data = jsonDecode(response.body);
+      final userJson = data['user'];
+      final user = UserModel.fromJson(userJson);
+      SnackbarHelper.showMessage(context, "Вы успешно авторизовались");
+      Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => ProfileScreen(user: user)),
+          (Route<dynamic> route) => false,
+          );
+    }else{
+      SnackbarHelper.showMessage(context, "Неверный пароль", isSuccess: false);
+    }
+  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -130,77 +126,60 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
         centerTitle: true,
         backgroundColor: Color(0xFF0088CC),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF0088CC), Colors.white],
-          ),
-        ),
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(11),
-                    TextInputFormatter.withFunction((oldValue, newValue) {
-                      String text = newValue.text.replaceAll(RegExp(r'\D'), '');
-                      if (text.length > 11) {
-                        text = text.substring(0, 11);
-                      }
-                      String formatted = "+7 " + text.substring(1);
-                      return TextEditingValue(
-                        text: formatted,
-                        selection: TextSelection.collapsed(offset: formatted.length),
-                      );
-                    })
-                  ],
-                  validator: (value) {
-                    if (value == null || value.length < 12) {
-                      return "Введите корректный номер";
-                    }
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    labelText: "Номер телефона",
-                    labelStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                    border: OutlineInputBorder(),
-                    fillColor: Colors.white,
-                    filled: true,
-                    hintStyle: TextStyle(color: Colors.black54),
-                  ),
-                  style: TextStyle(color: Colors.black),
-                ),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF0088CC),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      _getCode();
-                      _showCodeDialog();
-                    }
-                  },
-                  child: Text("Получить код"),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            if(!codeSent) ...[
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Номер телефона'),
+              ),
+              const SizedBox(height: 16,),
+              ElevatedButton(
+                onPressed: isLoading
+                ? null
+                : () => requestCode(_phoneController.text.trim()),
+                child: const Text('Получить код'),
+              ),
+            ] else ...[
+              TextField(
+                controller: _codeController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(labelText: 'Код подтверждения'),
+              ),
+              if(showPasswordField) ...[
+                const SizedBox(height: 12,),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Пароль'),
                 ),
               ],
+              const SizedBox(height: 16,),
+              ElevatedButton(
+                onPressed: isLoading
+                ? null
+                : () {
+                  final phone = _phoneController.text.trim();
+                  final code = _codeController.text.trim();
+
+                  if(showPasswordField){
+                    final password = _passwordController.text.trim();
+                    completeSignIn(phone, password);
+                  }else{
+                    verifyCode(phone, code);
+                  }
+                }, child: const Text('Войти'),
+              ),
+            ],
+            if(isLoading) const Padding(
+              padding: EdgeInsets.only(top: 20),
+              child: CircularProgressIndicator(),
             ),
-          ),
-        ),
-      ),
+          ],
+        ),),
     );
   }
 }
