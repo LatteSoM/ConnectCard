@@ -33,6 +33,10 @@ class VerifyCodeRequest(BaseModel):
     code: str
     password: str = None
 
+class PasswordRequest(BaseModel):
+    phone: str
+    password: str
+
 class TelegramAuth:
     def __init__(self, api_id: int, api_hash: str):
         self.api_id = api_id
@@ -61,26 +65,38 @@ class TelegramAuth:
             print(f"[send_code] Error: {e}")
             return False
 
-    async def sign_in(self, code: str, password: str = None):
+    async def sign_in(self, code: str):
         if not self.client or not self.phone_code_hash:
             raise RuntimeError("Call send_code() first")
 
         try:
             await self.client.sign_in(phone=self.phone, code=code, phone_code_hash=self.phone_code_hash)
         except errors.SessionPasswordNeededError:
-            if not password:
-                raise ValueError("2FA password required")
-            await self.client.sign_in(password=password)
+            return {"need_password": True}
 
+        return await self._get_user_data()
+
+    
+    async def complete_sign_in_with_password(self, password: str):
+        try:
+            await self.client.sign_in(password=password)
+            return await self._get_user_data()
+        except Exception as e:
+            print(f"[complete_sign_in_with_password] Error: {e}")
+            return {"error": str(e)}
+        
+        
+    async def _get_user_data(self):
         me = await self.client.get_me()
 
         avatar_filename = f"{me.id}_avatar.jpg"
         avatar_path = os.path.join(AVATAR_DIR, avatar_filename)
+
         try:
             await self.client.download_profile_photo(me, file=avatar_path)
         except Exception as e:
             print(f"[avatar] Failed to download avatar: {e}")
-            avatar_filename = None  # Нет аватарки
+            avatar_filename = None
 
         return {
             "user_id": me.id,
@@ -91,6 +107,8 @@ class TelegramAuth:
             "avatar_url": f"/avatars/{avatar_filename}" if avatar_filename else None
         }
 
+
+
 @app.post("/request_code")
 async def request_code(request: PhoneRequest):
     auth = TelegramAuth(API_ID, API_HASH)
@@ -99,29 +117,43 @@ async def request_code(request: PhoneRequest):
     sessions[request.phone] = auth
     return {"status": "Code sent"}
 
+
 @app.post("/verify_code")
 async def verify_code(request: VerifyCodeRequest):
     if request.phone not in sessions:
         raise HTTPException(status_code=404, detail="Session not found. Call /request_code first.")
 
     auth = sessions[request.phone]
-    try:
-        result = await auth.sign_in(request.code, request.password)
-    
-        response_data = {
-            "status": "Success",
-            "user": {
-                "user_id": result["user_id"],
-                "username": result["username"],
-                "first_name": result["first_name"],
-                "last_name": result["last_name"],
-                "phone": result.get("phone"),
-                "avatar_url": result["avatar_url"]
-            }
-        }
+    result = await auth.sign_in(request.code)
 
-        return JSONResponse(content=response_data, media_type="application/json; charset=utf-8")
-    except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=401, detail=f"Authorization failed: {e}")
+    if isinstance(result, dict) and result.get("need_password"):
+        return {"need_password": True}
+
+    response_data = {
+        "status": "Success",
+        "user": result
+    }
+
+    return JSONResponse(content=response_data, media_type="application/json; charset=utf-8")
+
+
+@app.post("/complete_sign_in")
+async def complete_sign_in(request: PasswordRequest):
+    if request.phone not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found.")
+
+    auth = sessions[request.phone]
+    result = await auth.complete_sign_in_with_password(request.password)
+
+    if "error" in result:
+        raise HTTPException(status_code=401, detail=result["error"])
+
+    response_data = {
+        "status": "Success",
+        "user": result
+    }
+
+    return JSONResponse(content=response_data, media_type="application/json; charset=utf-8")
+
+
+
