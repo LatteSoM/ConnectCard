@@ -19,7 +19,13 @@ class _StatScreenState extends State<StatScreen>{
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const BackButton(color: Colors.purpleAccent),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.purpleAccent.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const BackButton(color: Colors.purpleAccent,),
+              ),
               const Center(
                 child: Text(
                   'Аналитика',
