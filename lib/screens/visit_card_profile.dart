@@ -8,6 +8,7 @@ class VisitCardProfile extends StatefulWidget{
 
 class _VisitCardProfileState extends State<VisitCardProfile>{
   bool _isEditing = false;
+  bool _showQrCode = false;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _positionController = TextEditingController();
   final TextEditingController _companyController = TextEditingController();
@@ -105,58 +106,61 @@ class _VisitCardProfileState extends State<VisitCardProfile>{
                 // Text("Просто чиловый парень", style: TextStyle(fontSize: 14, color: Colors.white, fontWeight: FontWeight.w200),),
 
                 SizedBox(height: 25,),
+                if (_showQrCode)...[
+                  Text("Связаться со мной", style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),),
 
-                Text("Связаться со мной", style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold),),
+                  SizedBox(height: 16,),
 
-                SizedBox(height: 16,),
+                  InfoCard(
+                    icon: Icon(Icons.email_outlined, color: Colors.white, size: 32),
+                    title: "Email",
+                    subtitle: "obemekfc@mpt.ru",
+                    fullWidth: true,
+                    ),
+                  InfoCard(
+                    icon: Icon(Icons.phone, color: Colors.white, size: 32),
+                    title: "Телефон",
+                    subtitle: "+7 (800) 555 35-35",
+                    fullWidth: true,
+                    ),
+                  InfoCard(
+                    icon: Icon(Icons.language, color: Colors.white, size: 32),
+                    title: "Сайт",
+                    subtitle: "https://goyda.com",
+                    fullWidth: true,
+                    ),
 
-                InfoCard(
-                  icon: Icon(Icons.email_outlined, color: Colors.white, size: 32),
-                  title: "Email",
-                  subtitle: "obemekfc@mpt.ru",
-                  fullWidth: true,
+                  SizedBox(height: 15),
+
+                  Wrap(
+                    spacing: 13,
+                    runSpacing: 8,
+                    children: [
+                      InfoCard(
+                        icon: Icon(BoxIcons.bxl_telegram, color: Colors.white, size: 24),
+                        title: "Телеграм",
+                        subtitle: "@InQvd",
+                      ),
+                      InfoCard(
+                        icon: Icon(EvaIcons.linkedin, color: Colors.white, size: 24,),
+                        title: "LinkedIn",
+                        subtitle: "Профиль Linkedln",
+                      ),
+                      InfoCard(
+                        icon: Icon(Bootstrap.github, color: Colors.white, size: 24),
+                        title: "GitHub",
+                        subtitle: "Профиль GitHub",
+                      ),
+                      InfoCard(
+                        icon: Icon(Bootstrap.twitter_x, color: Colors.white, size: 24),
+                        title: "X",
+                        subtitle: "Профиль X",
+                      ),
+                    ],
                   ),
-                InfoCard(
-                  icon: Icon(Icons.phone, color: Colors.white, size: 32),
-                  title: "Телефон",
-                  subtitle: "+7 (800) 555 35-35",
-                  fullWidth: true,
-                  ),
-                InfoCard(
-                  icon: Icon(Icons.language, color: Colors.white, size: 32),
-                  title: "Сайт",
-                  subtitle: "https://goyda.com",
-                  fullWidth: true,
-                  ),
-
-                SizedBox(height: 15),
-
-                Wrap(
-                  spacing: 13,
-                  runSpacing: 8,
-                  children: [
-                    InfoCard(
-                      icon: Icon(BoxIcons.bxl_telegram, color: Colors.white, size: 24),
-                      title: "Телеграм",
-                      subtitle: "@InQvd",
-                    ),
-                    InfoCard(
-                      icon: Icon(EvaIcons.linkedin, color: Colors.white, size: 24,),
-                      title: "LinkedIn",
-                      subtitle: "Профиль Linkedln",
-                    ),
-                    InfoCard(
-                      icon: Icon(Bootstrap.github, color: Colors.white, size: 24),
-                      title: "GitHub",
-                      subtitle: "Профиль GitHub",
-                    ),
-                    InfoCard(
-                      icon: Icon(Bootstrap.twitter_x, color: Colors.white, size: 24),
-                      title: "X",
-                      subtitle: "Профиль X",
-                    ),
-                  ],
-                ),
+                ] else ...[
+                  Image.asset('assets/icons/telegram-logo.png'),
+                ]
               ],
             ),
           )
@@ -164,7 +168,9 @@ class _VisitCardProfileState extends State<VisitCardProfile>{
       ),
       floatingActionButton: RawMaterialButton(
         onPressed: (){
-
+          setState(() {
+            _showQrCode = !_showQrCode;
+          });
         },
         fillColor: Color(0xFF784BF7),
         shape: CircleBorder(),
