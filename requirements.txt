@@ -1,11 +1,13 @@
 annotated-types==0.7.0
 anyio==4.9.0
 cffi==1.17.1
+click==8.2.1
 cryptography==45.0.4
 dnspython==2.7.0
 ecdsa==0.19.1
 email_validator==2.2.0
 fastapi==0.115.12
+h11==0.16.0
 idna==3.10
 passlib==1.7.4
 pyasn1==0.6.1
@@ -24,3 +26,4 @@ sqlmodel==0.0.24
 starlette==0.46.2
 typing-inspection==0.4.1
 typing_extensions==4.14.0
+uvicorn==0.34.3
