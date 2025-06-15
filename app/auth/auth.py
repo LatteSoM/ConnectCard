@@ -5,8 +5,9 @@ from datetime import timedelta
 from typing import Optional
 from ..dependencies import get_session
 from ..models.models import User
-from .utils import verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from .utils import verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
 from pydantic import BaseModel
+from jose import JWTError, jwt
 
 router = APIRouter(
     prefix="/auth",
