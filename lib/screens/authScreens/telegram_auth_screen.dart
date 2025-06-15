@@ -78,7 +78,7 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
         SnackbarHelper.showMessage(context, "Вы успешно авторизовались");
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => ProfileScreen(user: user)),
+          MaterialPageRoute(builder: (context) => ProfileScreen()),
           (Route<dynamic> route) => false,
           );
       }
@@ -109,7 +109,7 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
       SnackbarHelper.showMessage(context, "Вы успешно авторизовались");
       Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => ProfileScreen(user: user)),
+          MaterialPageRoute(builder: (context) => ProfileScreen()),
           (Route<dynamic> route) => false,
           );
     }else{

@@ -1,6 +1,7 @@
 import 'package:connect_card/screens/list_of_visit_card.dart';
 import 'package:connect_card/screens/login_screen.dart';
 import 'package:connect_card/screens/profile_screen.dart';
+import 'package:connect_card/screens/settings_screen.dart';
 import 'package:connect_card/screens/share_visit.dart';
 import 'package:connect_card/screens/stat_screen.dart';
 import 'package:connect_card/screens/visit_card_profile.dart';
@@ -18,7 +19,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: ShareVisit(),
+      home: SettingsScreen(),
       theme: ThemeData.dark(),
     );
   }
