@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from ..database import get_db
-from ..models.event import User, Card
+from ..models.models import User, Card
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 
