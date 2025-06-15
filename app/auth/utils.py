@@ -6,7 +6,7 @@ from ..config.settings import settings
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = "your-secret-key-here"  # In production, use environment variable
+SECRET_KEY = "your-secret-key-here"  
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

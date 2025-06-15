@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlmodel import Session, select
 from typing import List
-from ..database import get_db
-from ..models.event import Card, ContactInfo, LinkWidget
+from ..database import get_session
+from ..models.models import Card, ContactInfo, LinkWidget
 from pydantic import BaseModel
 
 router = APIRouter(
@@ -28,9 +28,10 @@ class CardResponse(CardBase):
 
     class Config:
         from_attributes = True
+        arbitrary_types_allowed = True
 
 @router.post("/", response_model=CardResponse)
-def create_card(card: CardCreate, db: Session = Depends(get_db)):
+def create_card(card: CardCreate, session: Session = Depends(get_session)):
     # Create base card
     db_card = Card(
         avatar=card.avatar,
@@ -39,39 +40,39 @@ def create_card(card: CardCreate, db: Session = Depends(get_db)):
         position=card.position,
         about=card.about
     )
-    db.add(db_card)
-    db.commit()
-    db.refresh(db_card)
+    session.add(db_card)
+    session.commit()
+    session.refresh(db_card)
 
     # Add contact infos
     if card.contact_info_ids:
-        contact_infos = db.query(ContactInfo).filter(ContactInfo.id.in_(card.contact_info_ids)).all()
+        contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))).all()
         db_card.contact_infos.extend(contact_infos)
 
     # Add link widgets
     if card.link_widget_ids:
-        link_widgets = db.query(LinkWidget).filter(LinkWidget.id.in_(card.link_widget_ids)).all()
+        link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
         db_card.link_widgets.extend(link_widgets)
 
-    db.commit()
-    db.refresh(db_card)
+    session.commit()
+    session.refresh(db_card)
     return db_card
 
 @router.get("/", response_model=List[CardResponse])
-def read_cards(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    cards = db.query(Card).offset(skip).limit(limit).all()
+def read_cards(skip: int = 0, limit: int = 100, session: Session = Depends(get_session)):
+    cards = session.exec(select(Card).offset(skip).limit(limit)).all()
     return cards
 
 @router.get("/{card_id}", response_model=CardResponse)
-def read_card(card_id: int, db: Session = Depends(get_db)):
-    card = db.query(Card).filter(Card.id == card_id).first()
+def read_card(card_id: int, session: Session = Depends(get_session)):
+    card = session.exec(select(Card).where(Card.id == card_id)).first()
     if card is None:
         raise HTTPException(status_code=404, detail="Card not found")
     return card
 
 @router.put("/{card_id}", response_model=CardResponse)
-def update_card(card_id: int, card: CardCreate, db: Session = Depends(get_db)):
-    db_card = db.query(Card).filter(Card.id == card_id).first()
+def update_card(card_id: int, card: CardCreate, session: Session = Depends(get_session)):
+    db_card = session.exec(select(Card).where(Card.id == card_id)).first()
     if db_card is None:
         raise HTTPException(status_code=404, detail="Card not found")
     
@@ -81,24 +82,24 @@ def update_card(card_id: int, card: CardCreate, db: Session = Depends(get_db)):
     
     # Update contact infos
     if card.contact_info_ids:
-        contact_infos = db.query(ContactInfo).filter(ContactInfo.id.in_(card.contact_info_ids)).all()
+        contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))).all()
         db_card.contact_infos = contact_infos
 
     # Update link widgets
     if card.link_widget_ids:
-        link_widgets = db.query(LinkWidget).filter(LinkWidget.id.in_(card.link_widget_ids)).all()
+        link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
         db_card.link_widgets = link_widgets
 
-    db.commit()
-    db.refresh(db_card)
+    session.commit()
+    session.refresh(db_card)
     return db_card
 
 @router.delete("/{card_id}")
-def delete_card(card_id: int, db: Session = Depends(get_db)):
-    card = db.query(Card).filter(Card.id == card_id).first()
+def delete_card(card_id: int, session: Session = Depends(get_session)):
+    card = session.exec(select(Card).where(Card.id == card_id)).first()
     if card is None:
         raise HTTPException(status_code=404, detail="Card not found")
     
-    db.delete(card)
-    db.commit()
+    session.delete(card)
+    session.commit()
     return {"message": "Card deleted successfully"} 

@@ -1,90 +1,70 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Table
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.declarative import declarative_base
+from sqlmodel import SQLModel, Field, Relationship
+from typing import List, Optional
 from datetime import datetime
 
-Base = declarative_base()
+# Association tables must be defined first
+class CardContactInfo(SQLModel, table=True):
+    card_id: Optional[int] = Field(default=None, foreign_key="card.id", primary_key=True)
+    contact_info_id: Optional[int] = Field(default=None, foreign_key="contactinfo.id", primary_key=True)
 
-# Association table for Card-ContactInfo relationship
-card_contact_info = Table('card_contact_info', Base.metadata,
-    Column('card_id', Integer, ForeignKey('card.id')),
-    Column('contact_info_id', Integer, ForeignKey('contactinfo.id'))
-)
+class CardLinkWidget(SQLModel, table=True):
+    card_id: Optional[int] = Field(default=None, foreign_key="card.id", primary_key=True)
+    link_widget_id: Optional[int] = Field(default=None, foreign_key="linkwidget.id", primary_key=True)
 
-# Association table for Card-LinkWidget relationship
-card_link_widget = Table('card_link_widget', Base.metadata,
-    Column('card_id', Integer, ForeignKey('card.id')),
-    Column('link_widget_id', Integer, ForeignKey('linkwidget.id'))
-)
+class LinkWidget(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    link: str
+    icon: Optional[str] = None
+    description: Optional[str] = None
+    name: str
+    cards: List["Card"] = Relationship(back_populates="link_widgets", link_model=CardLinkWidget)
 
-class LinkWidget(Base):
-    __tablename__ = 'linkwidget'
-    
-    id = Column(Integer, primary_key=True)
-    link = Column(String(255), nullable=False)
-    icon = Column(String(255))
-    description = Column(String(500))
-    name = Column(String(100), nullable=False)
+class ContactInfo(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    icon: Optional[str] = None
+    name: str
+    description: Optional[str] = None
+    cards: List["Card"] = Relationship(back_populates="contact_infos", link_model=CardContactInfo)
 
-class ContactInfo(Base):
-    __tablename__ = 'contactinfo'
-    
-    id = Column(Integer, primary_key=True)
-    icon = Column(String(255))
-    name = Column(String(100), nullable=False)
-    description = Column(String(500))
+class Event(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    date: datetime
+    name: str
+    place: Optional[str] = None
+    contacts: List["Contact"] = Relationship(back_populates="event")
 
-class Event(Base):
-    __tablename__ = 'event'
-    
-    id = Column(Integer, primary_key=True)
-    date = Column(DateTime, nullable=False)
-    name = Column(String(100), nullable=False)
-    place = Column(String(255))
-    contacts = relationship('Contact', back_populates='event')
+class Card(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    avatar: Optional[str] = None
+    fullname: str
+    company: Optional[str] = None
+    position: Optional[str] = None
+    about: Optional[str] = None
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    user: Optional["User"] = Relationship(back_populates="cards")
+    contact_infos: List[ContactInfo] = Relationship(back_populates="cards", link_model=CardContactInfo)
+    link_widgets: List[LinkWidget] = Relationship(back_populates="cards", link_model=CardLinkWidget)
+    contacts: List["Contact"] = Relationship(back_populates="card")
 
-class Card(Base):
-    __tablename__ = 'card'
-    
-    id = Column(Integer, primary_key=True)
-    avatar = Column(String(255))
-    fullname = Column(String(100), nullable=False)
-    company = Column(String(100))
-    position = Column(String(100))
-    about = Column(String(1000))
-    
-    # Relationships
-    contact_infos = relationship('ContactInfo', secondary=card_contact_info, backref='cards')
-    link_widgets = relationship('LinkWidget', secondary=card_link_widget, backref='cards')
-    contacts = relationship('Contact', back_populates='card')
+class User(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    avatar: Optional[str] = None
+    name: str
+    phone: Optional[str] = None
+    email: str
+    is_premium_user: bool = Field(default=False)
+    telegram_authorized: bool = Field(default=False)
+    vk_authorized: bool = Field(default=False)
+    login: str
+    password: str
+    cards: List[Card] = Relationship(back_populates="user")
+    contacts: List["Contact"] = Relationship(back_populates="user")
 
-class User(Base):
-    __tablename__ = 'user'
-    
-    id = Column(Integer, primary_key=True)
-    avatar = Column(String(255))
-    name = Column(String(100), nullable=False)
-    phone = Column(String(20))
-    email = Column(String(100), unique=True, nullable=False)
-    is_premium_user = Column(Boolean, default=False)
-    telegram_authorized = Column(Boolean, default=False)
-    vk_authorized = Column(Boolean, default=False)
-    login = Column(String(50), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
-    
-    # Relationships
-    cards = relationship('Card', backref='user')
-    contacts = relationship('Contact', back_populates='user')
-
-class Contact(Base):
-    __tablename__ = 'contact'
-    
-    id = Column(Integer, primary_key=True)
-    card_id = Column(Integer, ForeignKey('card.id'), nullable=False)
-    user_id = Column(Integer, ForeignKey('user.id'), nullable=False)
-    event_id = Column(Integer, ForeignKey('event.id'))
-    
-    # Relationships
-    card = relationship('Card', back_populates='contacts')
-    user = relationship('User', back_populates='contacts')
-    event = relationship('Event', back_populates='contacts')
+class Contact(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    card_id: int = Field(foreign_key="card.id")
+    user_id: int = Field(foreign_key="user.id")
+    event_id: Optional[int] = Field(default=None, foreign_key="event.id")
+    card: Card = Relationship(back_populates="contacts")
+    user: User = Relationship(back_populates="contacts")
+    event: Optional[Event] = Relationship(back_populates="contacts")
