@@ -74,7 +74,7 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
         });
       }else{
         final userJson = data['user'];
-        final user = UserModel.fromJson(userJson);
+        // final user = UserModel.fromJson(userJson);
         SnackbarHelper.showMessage(context, "Вы успешно авторизовались");
         Navigator.pushAndRemoveUntil(
           context,
@@ -105,7 +105,7 @@ class _TelegramAuthScreenState extends State<TelegramAuthScreen> {
     if(response.statusCode == 200){
       final Map<String, dynamic> data = jsonDecode(response.body);
       final userJson = data['user'];
-      final user = UserModel.fromJson(userJson);
+      // final user = UserModel.fromJson(userJson);
       SnackbarHelper.showMessage(context, "Вы успешно авторизовались");
       Navigator.pushAndRemoveUntil(
           context,

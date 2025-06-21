@@ -1,81 +1,61 @@
 import 'dart:convert';
 
-import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/authScreens/telegram_auth_screen.dart';
 import 'package:connect_card/screens/authScreens/vk_auth_screen.dart';
-import 'package:connect_card/screens/profile_screen.dart';
-import 'package:connect_card/screens/welcome_screen.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:http/http.dart' as http;
 
-class LoginScreen extends StatefulWidget{
+class RegisterScreen extends StatefulWidget{
+  const RegisterScreen({super.key});
+
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen>{
+class _RegisterScreenState extends State<RegisterScreen>{
 
   final baseUrl = dotenv.env['BASE_URL'];
   final TextEditingController _loginController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
-
-  Future<void> _extractToken(String token) async{
-    final url = Uri.parse('$baseUrl/auth/current_user');
-    try{
-      final response = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-        }
-      );
-      if(response.statusCode == 200){
-        final storage = FlutterSecureStorage();
-        final data = jsonDecode(response.body);
-        final user = User.fromJson(data);
-
-        await storage.write(key: 'token', value: token);
-
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => WelcomeScreen(userName: user.name)));
-      }else{
-        SnackbarHelper.showMessage(context, 'Извините, произошла ошибка');
-      }
-    }catch (e){
-      print(e);
-      SnackbarHelper.showMessage(context, 'Произошла ошибка сети $e', isSuccess: false);
-    }
-  }
-
-  Future<void> _signIn() async{
-    if(_loginController.text.isEmpty || _passwordController.text.isEmpty){
-      SnackbarHelper.showMessage(context, "Не все поля заполнены", isSuccess: false);
+  Future<void> _registerUser() async{
+    if(_loginController.text.isEmpty || _passwordController.text.isEmpty || _confirmPasswordController.text.isEmpty){
+      SnackbarHelper.showMessage(context, 'Не все поля заполнены', isSuccess: false);
       return;
     }
 
-    final url = Uri.parse('$baseUrl/auth/token');
+    if(_passwordController.text != _confirmPasswordController.text){
+      SnackbarHelper.showMessage(context, 'Пароли не совпадают', isSuccess: false);
+      return;
+    }
+
+    final url = Uri.parse('$baseUrl/auth/register');
     try{
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: {
-          'username': _loginController.text,
-          'password': _passwordController.text,
-          'grant_type': 'password',
-        }.map((key, value) => MapEntry(key, value.toString())),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "login" : _loginController.text.trim(),
+          "password": _passwordController.text,
+          "email": _loginController.text.trim(),
+          "name": 'Alex',
+        })
       );
 
       if(response.statusCode == 200){
-        final data = jsonDecode(response.body);
-        _extractToken(data['access_token']);
-      }else{
-        SnackbarHelper.showMessage(context, 'Неверный логин или пароль', isSuccess: false);
+        SnackbarHelper.showMessage(context, 'Пользователь успешно зарегистрирован');
+      }
+      else{
+        final erroData = jsonDecode(response.body);
+        final error = erroData['detail'];
+        SnackbarHelper.showMessage(context, error == 'Username already registered' ? 'Данный логин уже занят' : 'Неверный логин или пароль', isSuccess: false);
       }
     }catch (e){
-      SnackbarHelper.showMessage(context, 'Произошла ошибка сети', isSuccess: false);
+      SnackbarHelper.showMessage(context, 'Извините, произошла ошибка сети', isSuccess: false);
     }
   }
 
@@ -143,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen>{
               controller: _loginController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
-                hintText: 'Почта или телефон',
+                hintText: 'Логин',
                 hintStyle: const TextStyle(color: Color(0xFF9C9C9C)),
                 filled: true,
                 fillColor: const Color(0xFF1A1A1A),
@@ -169,12 +149,28 @@ class _LoginScreenState extends State<LoginScreen>{
                 ),
               ),
             ),
+            const SizedBox(height: 15,),
+            TextField(
+              controller: _confirmPasswordController,
+              obscureText: true,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Подтверждение пароля',
+                hintStyle: const TextStyle(color: Color(0xFF9C9C9C)),
+                filled: true,
+                fillColor: const Color(0xFF1A1A1A),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
             const SizedBox(height: 50),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  _signIn();
+                  _registerUser();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurpleAccent,
@@ -183,13 +179,13 @@ class _LoginScreenState extends State<LoginScreen>{
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text('Войти', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w700)),
+                child: const Text('Создать аккаунт', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(height: 20),
             Center(
               child: Text(
-                'или войти через',
+                'или зарегистрироваться через',
                 style: TextStyle(color: Colors.grey[500], fontSize: 12),
               ),
             ),
@@ -244,5 +240,4 @@ class _LoginScreenState extends State<LoginScreen>{
       ),
     );
   }
-
 }
