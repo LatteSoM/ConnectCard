@@ -26,6 +26,17 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class UserUpdate(BaseModel):
+    avatar: str | None = None
+    name: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    login: str | None = None
+    password: str | None = None 
+    is_premium_user: bool | None = None
+    telegram_authorized: bool | None = None
+    vk_authorized: bool | None = None
+
 class UserResponse(UserBase):
     id: int
     cards: List[Card]
@@ -75,7 +86,7 @@ def read_user(user_id: int, session: Session = Depends(get_session)):
     return user
 
 @router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user: UserCreate, session: Session = Depends(get_session)):
+def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_session)):
     db_user = session.exec(select(User).where(User.id == user_id)).first()
     if db_user is None:
         raise HTTPException(status_code=404, detail="User not found")

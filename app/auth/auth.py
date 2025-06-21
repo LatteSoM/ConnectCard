@@ -29,6 +29,7 @@ class UserCreate(BaseModel):
     email: str
     name: str
 
+@router.get("/current_user")
 async def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
