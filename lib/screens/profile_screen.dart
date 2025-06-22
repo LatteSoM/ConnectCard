@@ -17,7 +17,13 @@ class ProfileScreen extends StatefulWidget{
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen>{
+enum OverlayMessageType { enteringEdit, savingChanges, cancelingEdit }
+
+class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin{
+  late AnimationController _overlayController;
+  bool _showOverlay = false;
+  OverlayMessageType _overlayMessageType = OverlayMessageType.enteringEdit;
+
   User user = User.empty();
   final baseUrl = dotenv.env['BASE_URL'];
   String? formattedPhone;
@@ -43,27 +49,50 @@ class _ProfileScreenState extends State<ProfileScreen>{
   void initState(){
     super.initState();
     _loadUser();
-    // formattedPhone = formatRussianPhone();
+    _overlayController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
   }
 
-  // String formatRussianPhone() {
-  //   String phone = widget.user.phoneNumber!;
-  //   final cleaned = phone.replaceAll(RegExp(r'[^\d+]'), '');
+  Future<void> _showOverlayAnimation() async {
+    setState(() => _showOverlay = true);
+    await _overlayController.forward(from: 0);
+    await Future.delayed(const Duration(milliseconds: 10));
+  }
 
-  //   if (!cleaned.startsWith('+7') || cleaned.length != 12) {
-  //     return phone;
-  //   }
+  Future<void> _hideOverlayAnimation() async {
+    await Future.delayed(const Duration(seconds: 1));
+    await _overlayController.reverse();
+    if (mounted) setState(() => _showOverlay = false);
+  }
 
-  //   final countryCode = '+7';
-  //   final areaCode = cleaned.substring(2, 5); 
-  //   final part1 = cleaned.substring(5, 8);
-  //   final part2 = cleaned.substring(8, 10);
-  //   final part3 = cleaned.substring(10, 12);
+  Future<void> _changeEditingState(bool isEditing) async {
+    setState(() => _isEditing = isEditing);
+    await _hideOverlayAnimation();
+  }
 
-  //   return '$countryCode ($areaCode) $part1-$part2-$part3';
-  // }
+  void _enterEditMode() async {
+    setState(() => _overlayMessageType = OverlayMessageType.enteringEdit);
+    await _showOverlayAnimation();
+    await _changeEditingState(true);
+  }
+
+  void _cancelEditing() async {
+    setState(() => _overlayMessageType = OverlayMessageType.cancelingEdit);
+    await _showOverlayAnimation();
+    await _changeEditingState(false);
+  }
+
+  @override
+  void dispose() {
+    _overlayController.dispose();
+    super.dispose();
+  }
 
   Future<void> _changeInfo() async{
+    setState(() => _overlayMessageType = OverlayMessageType.savingChanges);
+    await _showOverlayAnimation();
     final url = Uri.parse('$baseUrl/users/${user.id}');
     final updateUser = user.copyWith(
       email: _mailController.text.trim(),
@@ -80,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen>{
         )),
       );
       if(response.statusCode == 200){
-        SnackbarHelper.showMessage(context, 'Данные успешно изменены');
+        await _changeEditingState(false);
       }else{
         final error = jsonDecode(response.body);
         if(error['detail'] == 'Email already registered'){
@@ -92,6 +121,7 @@ class _ProfileScreenState extends State<ProfileScreen>{
       SnackbarHelper.showMessage(context, 'Извините, произошла ошибка сети', isSuccess: false);
     }
   }
+
 
   void _loadFields(User user){
     setState(() {
@@ -139,116 +169,180 @@ class _ProfileScreenState extends State<ProfileScreen>{
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.purpleAccent.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const BackButton(color: Colors.purpleAccent),
-                    ),
-                    if(_isEditing)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: IconButton(onPressed: (){
-                        _changeInfo();
-                        setState(() {
-                          _isEditing = false;
-                        });
-                      },
-                      icon: Icon(Icons.check)),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 55,
-                  ),
-                  SizedBox(height: 10,),
-
-                  Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28, color: Color(0xFF7C4DFF)),),
-
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Card(
-                      color: Color(0xFF1C1A1F),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Аккаунт', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                            const SizedBox(height: 12),
-                            _social(BoxIcons.bxl_vk, _vkController, isFirstTwo: true, onHyperTextPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => VkAuthScreen()));
-                            },),
-                            _social(BoxIcons.bxl_telegram, _telegramController, isFirstTwo: true, onHyperTextPressed: () {
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => TelegramAuthScreen()));
-                            }),
-                            _social(Icons.mail, _mailController),
-                            _social(EvaIcons.phone, _phoneController),
-                            _social(Icons.password, _passwordController, isPassword: true),
-                          ],
+                    padding: const EdgeInsets.only(left: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.purpleAccent.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const BackButton(color: Colors.purpleAccent),
+                        ),
+                        if(_isEditing)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: IconButton(onPressed: (){
+                            _changeInfo();
+                            // setState(() {
+                            //   _isEditing = false;
+                            // });
+                          },
+                          icon: Icon(Icons.check)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      CircleAvatar(
+                        radius: 55,
+                      ),
+                      SizedBox(height: 10,),
+
+                      Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28, color: Color(0xFF7C4DFF)),),
+
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Card(
+                          color: Color(0xFF1C1A1F),
+                          child: Padding(
+                            padding: const EdgeInsets.all(10),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Аккаунт', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                                const SizedBox(height: 12),
+                                _social(BoxIcons.bxl_vk, _vkController, isFirstTwo: true, onHyperTextPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => VkAuthScreen()));
+                                },),
+                                _social(BoxIcons.bxl_telegram, _telegramController, isFirstTwo: true, onHyperTextPressed: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => TelegramAuthScreen()));
+                                }),
+                                _social(Icons.mail, _mailController),
+                                _social(EvaIcons.phone, _phoneController),
+                                _social(Icons.password, _passwordController, isPassword: true),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
+
+                      SizedBox(height: 25,),
+                      if(!_isEditing)
+                      Column(
+                        children: [
+                          _buildActionButton(
+                            text: 'Редактировать профиль',
+                            onPressed: () {
+                              _enterEditMode();
+                            },
+                          ),
+                          _buildActionButton(
+                            text: 'Настройки приложения',
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen()));
+                            },
+                          ),
+                          _buildActionButton(
+                            text: 'Выйти из аккаунта',
+                            backgroundColor: const Color(0xFF952424),
+                            onPressed: () {
+                              SnackbarHelper.showMessage(context, 'Logout ёпта');
+                            },
+                            withBottomMargin: false,
+                          ),
+                        ],
+                      ),
+                      if(_isEditing)
+                      _buildActionButton(
+                            text: 'Выйти из редактирования',
+                            backgroundColor: const Color(0xFF952424),
+                            onPressed: _cancelEditing,
+                            withBottomMargin: false,
+                          ),
+                    ],
+                  )
+                ],
+              ),
+            ),
+          ),
+          if (_showOverlay)
+          AnimatedBuilder(
+            animation: _overlayController,
+            builder: (context, child) {
+              String title;
+              String subtitle;
+              IconData icon;
+              
+              switch (_overlayMessageType) {
+                case OverlayMessageType.enteringEdit:
+                  title = 'Режим редактирования';
+                  subtitle = 'Измените нужные поля';
+                  icon = Icons.edit;
+                  break;
+                case OverlayMessageType.savingChanges:
+                  title = 'Изменения сохранены';
+                  subtitle = 'Ваши данные успешно обновлены';
+                  icon = Icons.check_circle;
+                  break;
+                case OverlayMessageType.cancelingEdit:
+                  title = 'Редактирование отменено';
+                  subtitle = 'Изменения не были сохранены';
+                  icon = Icons.cancel;
+                  break;
+              }
+
+              return Opacity(
+                opacity: _overlayController.value,
+                child: Container(
+                  color: Colors.black.withOpacity(1),
+                  width: double.infinity,
+                  height: double.infinity,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(icon, size: 50, color: Colors.white),
+                        const SizedBox(height: 20),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          subtitle,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-
-                  SizedBox(height: 25,),
-                  if(!_isEditing)
-                  Column(
-                    children: [
-                      _buildActionButton(
-                        text: 'Редактировать профиль',
-                        onPressed: () => setState(() => _isEditing = !_isEditing),
-                      ),
-                      _buildActionButton(
-                        text: 'Настройки приложения',
-                        onPressed: () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => SettingsScreen()));
-                        },
-                      ),
-                      _buildActionButton(
-                        text: 'Выйти из аккаунта',
-                        backgroundColor: const Color(0xFF952424),
-                        onPressed: () {
-                          SnackbarHelper.showMessage(context, 'Logout ёпта');
-                        },
-                        withBottomMargin: false,
-                      ),
-                    ],
-                  ),
-                  if(_isEditing)
-                  _buildActionButton(
-                        text: 'Выйти из редактирования',
-                        backgroundColor: const Color(0xFF952424),
-                        onPressed: () {
-                          setState(() {
-                            _isEditing = false;
-                          });
-                        },
-                        withBottomMargin: false,
-                      ),
-                ],
-              )
-            ],
+                ),
+              );
+            },
           ),
-        ),
+        ],
       ),
     );
   }
