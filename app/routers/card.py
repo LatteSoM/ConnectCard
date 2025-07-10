@@ -105,12 +105,12 @@ def delete_card(card_id: int, session: Session = Depends(get_session)):
     return {"message": "Card deleted successfully"} 
 
 
-@router.get("/card/{card_id}/qr-link", response_model=dict)
+@router.get("/{card_id}/qr-link", response_model=dict)
 async def get_card_qr_link(card_id: int, session: Session = Depends(get_session)):
     
     card = session.exec(select(Card).where(Card.id == card_id)).first()
     if not card:
         raise HTTPException(status_code=404, detail="Card not found")
     # Формируем ссылку для QR-кода
-    qr_link = f"https://example.com/user/{card_id}"
+    qr_link = f"https://connectcard.ru/users/{card_id}"
     return {"qr_link": qr_link}

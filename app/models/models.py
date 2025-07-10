@@ -33,6 +33,14 @@ class Event(SQLModel, table=True):
     place: Optional[str] = None
     contacts: List["Contact"] = Relationship(back_populates="event")
 
+class Analytics(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    card_id: int = Field(foreign_key="card.id")
+    device_type: str  # Например, "desktop", "mobile", "tablet"
+    view_timestamp: datetime = Field(default_factory=datetime.utcnow)
+    user_agent: Optional[str] = None  # Для хранения полного User-Agent
+    card: Optional["Card"] = Relationship(back_populates="analytics")
+
 class Card(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     avatar: Optional[str] = None
@@ -45,6 +53,7 @@ class Card(SQLModel, table=True):
     contact_infos: List[ContactInfo] = Relationship(back_populates="cards", link_model=CardContactInfo)
     link_widgets: List[LinkWidget] = Relationship(back_populates="cards", link_model=CardLinkWidget)
     contacts: List["Contact"] = Relationship(back_populates="card")
+    analytics: List["Analytics"] = Relationship(back_populates="card") 
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
