@@ -126,56 +126,57 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
 
 @router.get("/{card_id}", response_model=dict)
 async def get_card_details(card_id: int, request: Request, session: Session = Depends(get_session)):
-        # Проверяем существование карточки
-        card = session.exec(select(Card).where(Card.id == card_id)).first()
-        if not card:
-            raise HTTPException(status_code=404, detail="Card not found")
+    # Проверка существования карточки
+    card = session.exec(select(Card).where(Card.id == card_id)).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
 
-        # Определяем тип устройства из User-Agent
-        user_agent_string = request.headers.get("user-agent", "")
-        user_agent = parse(user_agent_string)
-        device_type = "unknown"
-        if user_agent.is_mobile:
-            device_type = "mobile"
-        elif user_agent.is_tablet:
-            device_type = "tablet"
-        elif user_agent.is_pc:
-            device_type = "desktop"
+    # Определение типа устройства из User-Agent
+    user_agent_string = request.headers.get("user-agent", "")
+    user_agent = parse(user_agent_string)
+    device_type = "unknown"
+    if user_agent.is_mobile:
+        device_type = "mobile"
+    elif user_agent.is_tablet:
+        device_type = "tablet"
+    elif user_agent.is_pc:
+        device_type = "desktop"
 
-        # Сохраняем данные аналитики
-        analytics_entry = Analytics(
-            card_id=card_id,
-            device_type=device_type,
-            user_agent=user_agent_string
-        )
-        session.add(analytics_entry)
-        session.commit()
+    # Сохранение данных аналитики для просмотра
+    analytics_entry = Analytics(
+        card_id=card_id,
+        device_type=device_type,
+        action_type="view",
+        user_agent=user_agent_string
+    )
+    session.add(analytics_entry)
+    session.commit()
 
-        # Получаем связанные данные карточки
-        contact_infos = session.exec(select(ContactInfo)
-            .join(CardContactInfo)
-            .where(CardContactInfo.card_id == card_id)).all()
-        
-        link_widgets = session.exec(select(LinkWidget)
-            .join(CardLinkWidget)
-            .where(CardLinkWidget.card_id == card_id)).all()
+    # Получение связанных данных карточки
+    contact_infos = session.exec(select(ContactInfo)
+        .join(CardContactInfo)
+        .where(CardContactInfo.card_id == card_id)).all()
+    
+    link_widgets = session.exec(select(LinkWidget)
+        .join(CardLinkWidget)
+        .where(CardLinkWidget.card_id == card_id)).all()
 
-        # Формируем ответ
-        card_data = {
-            "id": card.id,
-            "avatar": card.avatar,
-            "fullname": card.fullname,
-            "company": card.company,
-            "position": card.position,
-            "about": card.about,
-            "contact_infos": [
-                {"id": ci.id, "icon": ci.icon, "name": ci.name, "description": ci.description}
-                for ci in contact_infos
-            ],
-            "link_widgets": [
-                {"id": lw.id, "link": lw.link, "icon": lw.icon, "description": lw.description, "name": lw.name}
-                for lw in link_widgets
-            ]
-        }
-        
-        return card_data
+    # Формирование ответа
+    card_data = {
+        "id": card.id,
+        "avatar": card.avatar,
+        "fullname": card.fullname,
+        "company": card.company,
+        "position": card.position,
+        "about": card.about,
+        "contact_infos": [
+            {"id": ci.id, "icon": ci.icon, "name": ci.name, "description": ci.description}
+            for ci in contact_infos
+        ],
+        "link_widgets": [
+            {"id": lw.id, "link": lw.link, "icon": lw.icon, "description": lw.description, "name": lw.name}
+            for lw in link_widgets
+        ]
+    }
+    
+    return card_data

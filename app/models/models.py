@@ -18,6 +18,7 @@ class LinkWidget(SQLModel, table=True):
     description: Optional[str] = None
     name: str
     cards: List["Card"] = Relationship(back_populates="link_widgets", link_model=CardLinkWidget)
+    analytics: List["Analytics"] = Relationship(back_populates="link_widget") 
 
 class ContactInfo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -37,9 +38,12 @@ class Analytics(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     card_id: int = Field(foreign_key="card.id")
     device_type: str  # Например, "desktop", "mobile", "tablet"
+    action_type: str  # Например, "view", "share", "add_to_contacts", "link_click"
+    link_widget_id: Optional[int] = Field(default=None, foreign_key="linkwidget.id")  # Для переходов по ссылкам
     view_timestamp: datetime = Field(default_factory=datetime.utcnow)
     user_agent: Optional[str] = None  # Для хранения полного User-Agent
     card: Optional["Card"] = Relationship(back_populates="analytics")
+    link_widget: Optional["LinkWidget"] = Relationship(back_populates=None)  # Связь с LinkWidget
 
 class Card(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -50,10 +54,10 @@ class Card(SQLModel, table=True):
     about: Optional[str] = None
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     user: Optional["User"] = Relationship(back_populates="cards")
-    contact_infos: List[ContactInfo] = Relationship(back_populates="cards", link_model=CardContactInfo)
-    link_widgets: List[LinkWidget] = Relationship(back_populates="cards", link_model=CardLinkWidget)
+    contact_infos: List["ContactInfo"] = Relationship(back_populates="cards", link_model=CardContactInfo)
+    link_widgets: List["LinkWidget"] = Relationship(back_populates="cards", link_model=CardLinkWidget)
     contacts: List["Contact"] = Relationship(back_populates="card")
-    analytics: List["Analytics"] = Relationship(back_populates="card") 
+    analytics: List["Analytics"] = Relationship(back_populates="card")
 
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

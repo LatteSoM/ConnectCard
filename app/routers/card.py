@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select, func
-from typing import List
+from typing import List, Optional
 from ..database import get_session
 from ..models.models import Card, ContactInfo, LinkWidget, Analytics
 from pydantic import BaseModel
+from user_agents import parse
 
 router = APIRouter(
     prefix="/cards",
@@ -144,3 +145,50 @@ async def get_card_analytics(card_id: int, session: Session = Depends(get_sessio
         }
         
         return analytics_data
+
+
+class ActionCreate(BaseModel):
+    action_type: str  # "share", "add_to_contacts", "link_click"
+    link_widget_id: Optional[int] = None  # Для действия "link_click"
+
+@router.post("/{card_id}/action", response_model=dict)
+async def record_action(card_id: int, action: ActionCreate, request: Request, session: Session = Depends(get_session)):
+    # Проверка существования карточки
+    card = session.exec(select(Card).where(Card.id == card_id)).first()
+    if not card:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    # Проверка валидности action_type
+    valid_actions = ["share", "add_to_contacts", "link_click"]
+    if action.action_type not in valid_actions:
+        raise HTTPException(status_code=400, detail="Invalid action type")
+
+    # Проверка link_widget_id для действия "link_click"
+    if action.action_type == "link_click" and action.link_widget_id:
+        link_widget = session.exec(select(LinkWidget).where(LinkWidget.id == action.link_widget_id)).first()
+        if not link_widget:
+            raise HTTPException(status_code=404, detail="Link widget not found")
+
+    # Определение типа устройства
+    user_agent_string = request.headers.get("user-agent", "")
+    user_agent = parse(user_agent_string)
+    device_type = "unknown"
+    if user_agent.is_mobile:
+        device_type = "mobile"
+    elif user_agent.is_tablet:
+        device_type = "tablet"
+    elif user_agent.is_pc:
+        device_type = "desktop"
+
+    # Сохранение действия
+    analytics_entry = Analytics(
+        card_id=card_id,
+        device_type=device_type,
+        action_type=action.action_type,
+        link_widget_id=action.link_widget_id if action.action_type == "link_click" else None,
+        user_agent=user_agent_string
+    )
+    session.add(analytics_entry)
+    session.commit()
+
+    return {"message": "Action recorded successfully"}
