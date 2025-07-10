@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
 from ..database import get_session
-from ..models.models import User, Card
+from ..models.models import User, Card, ContactInfo, LinkWidget, CardContactInfo, CardLinkWidget
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
+from ..database import engine
 
 router = APIRouter(
     prefix="/users",
@@ -120,3 +121,40 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     session.delete(user)
     session.commit()
     return {"message": "User deleted successfully"} 
+
+
+@router.get("/{card_id}", response_model=dict)
+async def get_card_details(card_id: int, session: Session = Depends(get_session)):
+    
+        card = session.exec(select(Card).where(Card.id == card_id)).first()
+        if not card:
+            raise HTTPException(status_code=404, detail="Card not found")
+        
+        # Получаем связанные данные
+        contact_infos = session.exec(select(ContactInfo)
+            .join(CardContactInfo)
+            .where(CardContactInfo.card_id == card_id)).all()
+        
+        link_widgets = session.exec(select(LinkWidget)
+            .join(CardLinkWidget)
+            .where(CardLinkWidget.card_id == card_id)).all()
+        
+        # Формируем ответ
+        card_data = {
+            "id": card.id,
+            "avatar": card.avatar,
+            "fullname": card.fullname,
+            "company": card.company,
+            "position": card.position,
+            "about": card.about,
+            "contact_infos": [
+                {"id": ci.id, "icon": ci.icon, "name": ci.name, "description": ci.description}
+                for ci in contact_infos
+            ],
+            "link_widgets": [
+                {"id": lw.id, "link": lw.link, "icon": lw.icon, "description": lw.description, "name": lw.name}
+                for lw in link_widgets
+            ]
+        }
+        
+        return card_data
