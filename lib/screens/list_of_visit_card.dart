@@ -1,3 +1,4 @@
+import 'package:connect_card/screens/visit_card_designer.dart';
 import 'package:flutter/material.dart';
 import 'package:icons_plus/icons_plus.dart';
 
@@ -40,7 +41,9 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.add, color: Colors.white),
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(context, MaterialPageRoute(builder: (context) => VisitCardDesigner()));
+                            },
                           ),
                         ],
                       ),
