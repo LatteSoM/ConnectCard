@@ -2,15 +2,17 @@ from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime
 
-# Association tables must be defined first
+# Таблицы для связи многие ко многим нужны для того чтобы связать карточку с контактной информацией и ссылками
 class CardContactInfo(SQLModel, table=True):
     card_id: Optional[int] = Field(default=None, foreign_key="card.id", primary_key=True)
     contact_info_id: Optional[int] = Field(default=None, foreign_key="contactinfo.id", primary_key=True)
 
+# Таблицы для связи многие ко многим нужны для того чтобы связать карточку с ссылками
 class CardLinkWidget(SQLModel, table=True):
     card_id: Optional[int] = Field(default=None, foreign_key="card.id", primary_key=True)
     link_widget_id: Optional[int] = Field(default=None, foreign_key="linkwidget.id", primary_key=True)
 
+# Таблица для ссылок
 class LinkWidget(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     link: str
@@ -20,6 +22,7 @@ class LinkWidget(SQLModel, table=True):
     cards: List["Card"] = Relationship(back_populates="link_widgets", link_model=CardLinkWidget)
     analytics: List["Analytics"] = Relationship(back_populates="link_widget") 
 
+# Таблица для контактной информации
 class ContactInfo(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     icon: Optional[str] = None
@@ -27,6 +30,7 @@ class ContactInfo(SQLModel, table=True):
     description: Optional[str] = None
     cards: List["Card"] = Relationship(back_populates="contact_infos", link_model=CardContactInfo)
 
+# Таблица для событий
 class Event(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     date: datetime
@@ -34,6 +38,7 @@ class Event(SQLModel, table=True):
     place: Optional[str] = None
     contacts: List["Contact"] = Relationship(back_populates="event")
 
+# Таблица для аналитики
 class Analytics(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     card_id: int = Field(foreign_key="card.id")
@@ -45,6 +50,7 @@ class Analytics(SQLModel, table=True):
     card: Optional["Card"] = Relationship(back_populates="analytics")
     link_widget: Optional["LinkWidget"] = Relationship(back_populates=None)  # Связь с LinkWidget
 
+# Таблица для карточки
 class Card(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     avatar: Optional[str] = None
@@ -59,6 +65,7 @@ class Card(SQLModel, table=True):
     contacts: List["Contact"] = Relationship(back_populates="card")
     analytics: List["Analytics"] = Relationship(back_populates="card")
 
+# Таблица для пользователя
 class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     avatar: Optional[str] = None
@@ -73,6 +80,7 @@ class User(SQLModel, table=True):
     cards: List[Card] = Relationship(back_populates="user")
     contacts: List["Contact"] = Relationship(back_populates="user")
 
+# Таблица для контакта
 class Contact(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     card_id: int = Field(foreign_key="card.id")
