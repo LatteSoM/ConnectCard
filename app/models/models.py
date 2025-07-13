@@ -1,6 +1,8 @@
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime
+from pydantic import field_validator
+import re
 
 # Таблицы для связи многие ко многим нужны для того чтобы связать карточку с контактной информацией и ссылками
 class CardContactInfo(SQLModel, table=True):
@@ -83,6 +85,14 @@ class User(SQLModel, table=True):
     consent_timestamp: Optional[datetime] = Field(default=None)  # Время предоставления согласия
     created_at: datetime = Field(default_factory=datetime.utcnow)  # Время создания
     updated_at: Optional[datetime] = Field(default=None)  # Время последнего обновления
+
+    @field_validator('phone')
+    def validate_phone(cls, v):
+        if v:
+            pattern = re.compile(r'^(?:\+7|8)?\d{10}$')
+            if not pattern.match(v):
+                raise ValueError('Invalid phone number format')
+        return v
 
 # Таблица для контакта
 class Contact(SQLModel, table=True):
