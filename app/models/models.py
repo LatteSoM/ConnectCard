@@ -79,6 +79,10 @@ class User(SQLModel, table=True):
     password: str
     cards: List[Card] = Relationship(back_populates="user")
     contacts: List["Contact"] = Relationship(back_populates="user")
+    consent_given: bool = Field(default=False)  # Согласие на обработку ПДн
+    consent_timestamp: Optional[datetime] = Field(default=None)  # Время предоставления согласия
+    created_at: datetime = Field(default_factory=datetime.utcnow)  # Время создания
+    updated_at: Optional[datetime] = Field(default=None)  # Время последнего обновления
 
 # Таблица для контакта
 class Contact(SQLModel, table=True):
