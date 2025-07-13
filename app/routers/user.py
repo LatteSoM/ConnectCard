@@ -91,28 +91,28 @@ def read_users(skip: int = 0, limit: int = 100, session: Session = Depends(get_s
 def read_user(user_id: int, session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.id == user_id)).first()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
     return user
 
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_session)):
     db_user = session.exec(select(User).where(User.id == user_id)).first()
     if db_user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
     
-    # Check if new email or login is already taken by another user
+    # Проверка, не занят ли новый email или логин другого пользователя
     if user.email != db_user.email:
         if session.exec(select(User).where(User.email == user.email)).first():
-            raise HTTPException(status_code=400, detail="Email already registered")
+            raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
     if user.login != db_user.login:
         if session.exec(select(User).where(User.login == user.login)).first():
-            raise HTTPException(status_code=400, detail="Login already taken")
+            raise HTTPException(status_code=400, detail="Логин уже занят")
     
-    # Update user fields
+    # Обновление полей пользователя
     for key, value in user.model_dump(exclude={'password'}).items():
         setattr(db_user, key, value)
     
-    # Update password if provided
+    # Обновление пароля, если он предоставлен
     if user.password:
         db_user.password = get_password_hash(user.password)
     
@@ -124,11 +124,11 @@ def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_s
 def delete_user(user_id: int, session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.id == user_id)).first()
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
     
     session.delete(user)
     session.commit()
-    return {"message": "User deleted successfully"} 
+    return {"message": "Пользователь успешно удален"} 
 
 
 @router.get("/{card_id}", response_model=dict)
@@ -136,7 +136,7 @@ async def get_card_details(card_id: int, request: Request, session: Session = De
     # Проверка существования карточки
     card = session.exec(select(Card).where(Card.id == card_id)).first()
     if not card:
-        raise HTTPException(status_code=404, detail="Card not found")
+        raise HTTPException(status_code=404, detail="Карточка не найдена")
 
     # Определение типа устройства из User-Agent
     user_agent_string = request.headers.get("user-agent", "")
