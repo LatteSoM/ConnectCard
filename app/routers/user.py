@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from typing import List
 from ..database import get_session
-from ..models.models import User, Card, ContactInfo, LinkWidget, CardContactInfo, CardLinkWidget, Analytics
+from ..models.models import User, Card, ContactInfo, LinkWidget, CardContactInfo, CardLinkWidget, Analytics, AuditLog
 from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from ..database import engine
@@ -82,8 +82,17 @@ async def create_user(user: UserCreate, session: Session = Depends(get_session))
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
-    
-    # Дешифруем данные для ответа
+
+    # Логирование
+    audit_log = AuditLog(
+        user_id=db_user.id,
+        action="create_user",
+        details=f"Пользователь создан с email: {user.email}",
+        timestamp=datetime.utcnow()
+    )
+    session.add(audit_log)
+    session.commit()
+    # Дешифрование данных для ответа
     db_user.name = decrypt_data(db_user.name)
     db_user.email = decrypt_data(db_user.email)
     db_user.phone = decrypt_data(db_user.phone) if db_user.phone else None
@@ -113,7 +122,14 @@ async def read_user(
     return user
 
 @router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_session)):
+def update_user(
+    user_id: int,
+    user: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):  
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Не авторизован для доступа к этому пользователю")
     db_user = session.exec(select(User).where(User.id == user_id)).first()
     if db_user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
@@ -127,15 +143,36 @@ def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_s
             raise HTTPException(status_code=400, detail="Логин уже занят")
     
     # Обновление полей пользователя
-    for key, value in user.model_dump(exclude={'password'}).items():
-        setattr(db_user, key, value)
+    update_data = user.model_dump(exclude={'password'})
+    for key, value in update_data.items():
+        if value is not None:
+            if key in ['name', 'phone', 'email']:
+                # Шифрование персональных данных
+                setattr(db_user, key, encrypt_data(value) if value else None)
+            else:
+                setattr(db_user, key, value)
     
     # Обновление пароля, если он предоставлен
     if user.password:
         db_user.password = get_password_hash(user.password)
+
+    db_user.updated_at = datetime.utcnow()
     
+    audit_log = AuditLog(
+        user_id=user_id,
+        action="update_user",
+        details=f"Пользователь обновлен: {user.model_dump_json(exclude={'password'})}",
+        timestamp=datetime.utcnow()
+    )
+    session.add(audit_log)
+
     session.commit()
     session.refresh(db_user)
+    
+    db_user.name = decrypt_data(db_user.name)
+    db_user.email = decrypt_data(db_user.email)
+    db_user.phone = decrypt_data(db_user.phone) if db_user.phone else None
+    
     return db_user
 
 @router.delete("/{user_id}")
@@ -144,13 +181,28 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     if user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     
+    audit_log = AuditLog(
+        user_id=user_id,
+        action="delete_user",
+        details=f"Пользователь удален",
+        timestamp=datetime.utcnow()
+    )
+    session.add(audit_log)
+    session.commit()
+
     session.delete(user)
     session.commit()
     return {"message": "Пользователь успешно удален"} 
 
 
 @router.get("/{card_id}", response_model=dict)
-async def get_card_details(card_id: int, request: Request, session: Session = Depends(get_session)):
+async def get_card_details(
+    card_id: int, 
+    request: Request, 
+    session: Session = Depends(get_session),
+):
+    # if not current_user.is_premium_user:
+    #     raise HTTPException(status_code=403, detail="Не авторизован для доступа к этой карточке")
     # Проверка существования карточки
     card = session.exec(select(Card).where(Card.id == card_id)).first()
     if not card:
@@ -205,3 +257,30 @@ async def get_card_details(card_id: int, request: Request, session: Session = De
     }
     
     return card_data
+
+# Запрос на удаление данных пользователя
+@router.post("/{user_id}/request-deletion")
+async def request_deletion(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    if current_user.id != user_id:
+        raise HTTPException(status_code=403, detail="Не авторизован")
+    user = session.exec(select(User).where(User.id == user_id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    # Логирование запроса на удаление
+    audit_log = AuditLog(
+        user_id=user_id,
+        action="request_deletion",
+        details="Запрос на удаление данных пользователя",
+        timestamp=datetime.utcnow()
+    )
+    session.add(audit_log)
+    
+    # Удаление данных
+    session.delete(user)
+    session.commit()
+    return {"message": "Данные пользователя успешно удалены"}

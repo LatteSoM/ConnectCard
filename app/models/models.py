@@ -93,3 +93,10 @@ class Contact(SQLModel, table=True):
     card: Card = Relationship(back_populates="contacts")
     user: User = Relationship(back_populates="contacts")
     event: Optional[Event] = Relationship(back_populates="contacts")
+
+class AuditLog(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    action: str  # "create_user", "update_user", "delete_user"
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    details: Optional[str] = None  
