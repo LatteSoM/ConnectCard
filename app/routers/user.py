@@ -8,6 +8,8 @@ from passlib.context import CryptContext
 from ..database import engine
 from user_agents import parse
 from datetime import datetime
+from ..encryption import encrypt_data, decrypt_data
+from auth.auth import get_current_user
 
 router = APIRouter(
     prefix="/users",
@@ -51,23 +53,23 @@ class UserResponse(UserBase):
 def get_password_hash(password: str):
     return pwd_context.hash(password)
 
+
 @router.post("/", response_model=UserResponse)
-def create_user(user: UserCreate, session: Session = Depends(get_session)):
+async def create_user(user: UserCreate, session: Session = Depends(get_session)):
     if not user.consent_given:
-        raise HTTPException(status_code=400, detail="Необходимо дать согласие на обработку персональных данных")
-    # Check if user with same email or login exists
-    if session.exec(select(User).where(User.email == user.email)).first():
-        raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
-    if session.exec(select(User).where(User.login == user.login)).first():
-        raise HTTPException(status_code=400, detail="Логин уже занят")
+        raise HTTPException(status_code=400, detail="Consent for personal data processing is required")
     
-    # Создание нового пользователя
+    if session.exec(select(User).where(User.email == encrypt_data(user.email))).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
+    if session.exec(select(User).where(User.login == user.login)).first():
+        raise HTTPException(status_code=400, detail="Login already taken")
+    
     hashed_password = get_password_hash(user.password)
     db_user = User(
         avatar=user.avatar,
-        name=user.name,
-        phone=user.phone,
-        email=user.email,
+        name=encrypt_data(user.name),
+        phone=encrypt_data(user.phone) if user.phone else None,
+        email=encrypt_data(user.email),
         is_premium_user=user.is_premium_user,
         telegram_authorized=user.telegram_authorized,
         vk_authorized=user.vk_authorized,
@@ -80,6 +82,11 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
+    
+    # Дешифруем данные для ответа
+    db_user.name = decrypt_data(db_user.name)
+    db_user.email = decrypt_data(db_user.email)
+    db_user.phone = decrypt_data(db_user.phone) if db_user.phone else None
     return db_user
 
 @router.get("/", response_model=List[UserResponse])
@@ -88,10 +95,21 @@ def read_users(skip: int = 0, limit: int = 100, session: Session = Depends(get_s
     return users
 
 @router.get("/{user_id}", response_model=UserResponse)
-def read_user(user_id: int, session: Session = Depends(get_session)):
+async def read_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    if current_user.id != user_id and not current_user.is_premium_user:
+        raise HTTPException(status_code=403, detail="Не авторизован для доступа к этому пользователю")
     user = session.exec(select(User).where(User.id == user_id)).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    # Дешифрование данных для ответа
+    user.name = decrypt_data(user.name)
+    user.email = decrypt_data(user.email)
+    user.phone = decrypt_data(user.phone) if user.phone else None
     return user
 
 @router.put("/{user_id}", response_model=UserResponse)
