@@ -7,6 +7,7 @@ from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from ..database import engine
 from user_agents import parse
+from datetime import datetime
 
 router = APIRouter(
     prefix="/users",
@@ -27,6 +28,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
+    consent_given: bool 
 
 class UserUpdate(BaseModel):
     avatar: str | None = None
@@ -51,13 +53,15 @@ def get_password_hash(password: str):
 
 @router.post("/", response_model=UserResponse)
 def create_user(user: UserCreate, session: Session = Depends(get_session)):
+    if not user.consent_given:
+        raise HTTPException(status_code=400, detail="Необходимо дать согласие на обработку персональных данных")
     # Check if user with same email or login exists
     if session.exec(select(User).where(User.email == user.email)).first():
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
     if session.exec(select(User).where(User.login == user.login)).first():
-        raise HTTPException(status_code=400, detail="Login already taken")
+        raise HTTPException(status_code=400, detail="Логин уже занят")
     
-    # Create new user
+    # Создание нового пользователя
     hashed_password = get_password_hash(user.password)
     db_user = User(
         avatar=user.avatar,
@@ -68,7 +72,10 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
         telegram_authorized=user.telegram_authorized,
         vk_authorized=user.vk_authorized,
         login=user.login,
-        password=hashed_password
+        password=hashed_password,
+        consent_given=user.consent_given,
+        consent_timestamp=datetime.utcnow() if user.consent_given else None,
+        created_at=datetime.utcnow()
     )
     session.add(db_user)
     session.commit()
