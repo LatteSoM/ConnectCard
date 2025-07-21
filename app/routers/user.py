@@ -9,7 +9,7 @@ from ..database import engine
 from user_agents import parse
 from datetime import datetime
 from ..encryption import encrypt_data, decrypt_data
-from auth.auth import get_current_user
+from ..auth.auth import get_current_user
 
 router = APIRouter(
     prefix="/users",
@@ -114,7 +114,6 @@ async def read_user(
     user = session.exec(select(User).where(User.id == user_id)).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
-    
     # Дешифрование данных для ответа
     user.name = decrypt_data(user.name)
     user.email = decrypt_data(user.email)
@@ -195,7 +194,7 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     return {"message": "Пользователь успешно удален"} 
 
 
-@router.get("/{card_id}", response_model=dict)
+@router.get("/card/{card_id}", response_model=dict)
 async def get_card_details(
     card_id: int, 
     request: Request, 

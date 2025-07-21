@@ -19,6 +19,10 @@ class LinkWidgetBase(BaseModel):
 class LinkWidgetCreate(LinkWidgetBase):
     pass
 
+class BulkLinkWidgetCreate(BaseModel):
+    """Модель для массового создания виджетов"""
+    widgets: List[LinkWidgetCreate]
+
 class LinkWidgetResponse(LinkWidgetBase):
     id: int
 
@@ -32,6 +36,43 @@ def create_link_widget(link_widget: LinkWidgetCreate, session: Session = Depends
     session.commit()
     session.refresh(db_link_widget)
     return db_link_widget
+
+@router.post("/bulk", response_model=List[LinkWidgetResponse])
+def create_bulk_link_widgets(
+    bulk_data: BulkLinkWidgetCreate,
+    session: Session = Depends(get_session)
+):
+    """
+    Создает несколько виджетов социальных сетей за один запрос.
+    Принимает список объектов с параметрами для каждого виджета.
+    """
+    created_widgets = []
+    
+    try:
+        for widget_data in bulk_data.widgets:
+            db_widget = LinkWidget(
+                link=widget_data.link,
+                icon=widget_data.icon,
+                description=widget_data.description,
+                name=widget_data.name
+            )
+            session.add(db_widget)
+            created_widgets.append(db_widget)
+        
+        session.commit()
+        
+        # Обновляем объекты чтобы получить их ID
+        for widget in created_widgets:
+            session.refresh(widget)
+            
+        return created_widgets
+        
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Error creating widgets: {str(e)}"
+        )
 
 @router.get("/", response_model=List[LinkWidgetResponse])
 def read_link_widgets(skip: int = 0, limit: int = 100, session: Session = Depends(get_session)):
