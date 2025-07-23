@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import Session
+from sqlmodel import Session, select
 from typing import List
 from ..database import get_session
 from ..models.models import ContactInfo
@@ -18,6 +18,9 @@ class ContactInfoBase(BaseModel):
 class ContactInfoCreate(ContactInfoBase):
     pass
 
+class BulkContactInfoCreate(BaseModel):
+    contacts: List[ContactInfoCreate]
+
 class ContactInfoResponse(ContactInfoBase):
     id: int
 
@@ -31,6 +34,40 @@ def create_contact_info(contact_info: ContactInfoCreate, session: Session = Depe
     session.commit()
     session.refresh(db_contact_info)
     return db_contact_info
+
+@router.post("/bulk", response_model=List[ContactInfoResponse])
+def create_bulk_contact_info(
+    bulk_data: BulkContactInfoCreate,
+    session: Session = Depends(get_session)
+):
+    """
+    Массовое создание контактной информации.
+    Принимает список объектов ContactInfoCreate.
+    Возвращает список созданных записей с их ID.
+    """
+    created_contacts = []
+    
+    try:
+        # Создаем все записи в одной транзакции
+        for contact_data in bulk_data.contacts:
+            db_contact = ContactInfo(**contact_data.model_dump())
+            session.add(db_contact)
+            created_contacts.append(db_contact)
+        
+        session.commit()
+        
+        # Обновляем объекты, чтобы получить их ID
+        for contact in created_contacts:
+            session.refresh(contact)
+            
+        return created_contacts
+
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error: {str(e)}"
+        )
 
 @router.get("/", response_model=List[ContactInfoResponse])
 def read_contact_infos(skip: int = 0, limit: int = 100, session: Session = Depends(get_session)):

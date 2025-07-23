@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from datetime import datetime
 from sqlmodel import Session, select, func
 from typing import List, Optional
+
+from ..auth.auth import get_current_user
 from ..database import get_session
-from ..models.models import Card, ContactInfo, LinkWidget, Analytics
+from ..models.models import Card, ContactInfo, LinkWidget, Analytics, User
 from pydantic import BaseModel
 from user_agents import parse
 
@@ -38,14 +40,15 @@ class ActionCreate(BaseModel):
 
 
 @router.post("/", response_model=CardResponse)
-def create_card(card: CardCreate, session: Session = Depends(get_session)):
+def create_card(card: CardCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
     # Create base card
     db_card = Card(
         avatar=card.avatar,
         fullname=card.fullname,
         company=card.company,
         position=card.position,
-        about=card.about
+        about=card.about,
+        user_id=current_user.id,
     )
     session.add(db_card)
     session.commit()
@@ -76,6 +79,30 @@ def read_card(card_id: int, session: Session = Depends(get_session)):
     if card is None:
         raise HTTPException(status_code=404, detail="Card not found")
     return card
+
+@router.get("/user/{user_id}", response_model=List[CardResponse])
+def read_user_cards(
+    user_id: int,
+    session: Session = Depends(get_session)
+):
+    """
+    Получает ВСЕ карточки, принадлежащие конкретному пользователю.
+    
+    Параметры:
+    - user_id: ID пользователя
+    """
+    cards = session.exec(
+        select(Card)
+        .where(Card.user_id == user_id)
+    ).all()
+    
+    if not cards:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No cards found for user with id {user_id}"
+        )
+    
+    return cards
 
 @router.put("/{card_id}", response_model=CardResponse)
 def update_card(card_id: int, card: CardCreate, session: Session = Depends(get_session)):
