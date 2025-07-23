@@ -9,7 +9,7 @@ from ..database import engine
 from user_agents import parse
 from datetime import datetime
 from ..encryption import encrypt_data, decrypt_data
-from auth.auth import get_current_user
+from ..auth.auth import get_current_user
 
 router = APIRouter(
     prefix="/users",
@@ -172,7 +172,7 @@ def update_user(
     db_user.name = decrypt_data(db_user.name)
     db_user.email = decrypt_data(db_user.email)
     db_user.phone = decrypt_data(db_user.phone) if db_user.phone else None
-    
+
     return db_user
 
 @router.delete("/{user_id}")
