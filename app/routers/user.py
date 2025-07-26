@@ -99,8 +99,19 @@ async def create_user(user: UserCreate, session: Session = Depends(get_session))
     return db_user
 
 @router.get("/", response_model=List[UserResponse])
-def read_users(skip: int = 0, limit: int = 100, session: Session = Depends(get_session)):
+def read_users(
+    skip: int = 0, 
+    limit: int = 100, 
+    session: Session = Depends(get_session)
+):
     users = session.exec(select(User).offset(skip).limit(limit)).all()
+    
+    # Дешифруем данные для каждого пользователя
+    for user in users:
+        user.name = decrypt_data(user.name)
+        user.email = decrypt_data(user.email)
+        user.phone = decrypt_data(user.phone) if user.phone else None
+    
     return users
 
 @router.get("/{user_id}", response_model=UserResponse)
@@ -146,6 +157,7 @@ def update_user(
     for key, value in update_data.items():
         if value is not None:
             if key in ['name', 'phone', 'email']:
+                print(f"Encrypting {key}: {value} -> {encrypt_data(value)}")
                 # Шифрование персональных данных
                 setattr(db_user, key, encrypt_data(value) if value else None)
             else:

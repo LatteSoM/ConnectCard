@@ -25,44 +25,76 @@
 from cryptography.fernet import Fernet, InvalidToken
 from typing import Optional
 import logging
+import base64
+import os
+from dotenv import load_dotenv
+
+# Загружаем переменные окружения
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+# Глобальный экземпляр Fernet
+_cipher_suite = None
+
+def _get_cipher_suite():
+    """Инициализирует Fernet с ключом из .env"""
+    global _cipher_suite
+    if _cipher_suite is None:
+        key = os.getenv('FERNET_KEY')
+        if not key:
+            raise ValueError("FERNET_KEY not found in .env file")
+        
+        # Проверяем что ключ валидный
+        try:
+            _cipher_suite = Fernet(key.encode())
+        except ValueError as e:
+            logger.error(f"Invalid FERNET_KEY: {str(e)}")
+            raise
+    return _cipher_suite
+
 def is_fernet_token(data: str) -> bool:
     """Проверяет, похожи ли данные на Fernet-токен"""
-    if not data:
+    if not data or not isinstance(data, str):
         return False
+        
     try:
-        # Fernet токен должен иметь определённую структуру
-        Fernet.decrypt(data.encode())
-        return True
-    except:
+        # Проверяем структуру без реальной дешифровки
+        decoded = base64.urlsafe_b64decode(data)
+        return len(decoded) > 0
+    except (ValueError, TypeError):
         return False
 
 def encrypt_data(data: str) -> Optional[str]:
-    """Шифрует только если данные ещё не зашифрованы"""
-    if not data:
+    """Шифрует строку в Fernet-токен"""
+    if not data or not isinstance(data, str):
         return None
+        
     if is_fernet_token(data):
         return data  # Уже зашифровано
+        
     try:
-        return Fernet.encrypt(data.encode()).decode()
+        cipher = _get_cipher_suite()
+        encrypted = cipher.encrypt(data.encode())
+        return encrypted.decode()
     except Exception as e:
         logger.error(f"Encryption error: {str(e)}")
         return None
 
 def decrypt_data(encrypted_data: str) -> Optional[str]:
-    """Безопасная дешифровка с проверкой формата"""
-    if not encrypted_data:
+    """Дешифрует Fernet-токен"""
+    if not encrypted_data or not isinstance(encrypted_data, str):
         return None
         
     if not is_fernet_token(encrypted_data):
-        return encrypted_data  # Возвращаем как есть, если не зашифровано
+        return encrypted_data  # Не зашифровано
         
     try:
-        return Fernet.decrypt(encrypted_data.encode()).decode()
+        cipher = _get_cipher_suite()
+        decrypted = cipher.decrypt(encrypted_data.encode())
+        return decrypted.decode()
     except InvalidToken:
-        logger.error("Invalid Fernet token - possible key mismatch")
+        logger.error("Invalid token - possible key mismatch")
         return None
     except Exception as e:
         logger.error(f"Decryption error: {str(e)}")
