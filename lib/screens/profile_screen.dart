@@ -177,17 +177,17 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 16),
+                    padding: const EdgeInsets.only(right: 16),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.purpleAccent.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const BackButton(color: Colors.purpleAccent),
-                        ),
+                        // Container(
+                        //   decoration: BoxDecoration(
+                        //     color: Colors.purpleAccent.withOpacity(0.2),
+                        //     shape: BoxShape.circle,
+                        //   ),
+                        //   child: const BackButton(color: Colors.purpleAccent),
+                        // ),
                         if(_isEditing)
                         Container(
                           decoration: BoxDecoration(

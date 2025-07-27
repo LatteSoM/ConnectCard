@@ -4,6 +4,7 @@ import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/authScreens/telegram_auth_screen.dart';
 import 'package:connect_card/screens/authScreens/vk_auth_screen.dart';
 import 'package:connect_card/screens/profile_screen.dart';
+import 'package:connect_card/screens/register_screen.dart';
 import 'package:connect_card/screens/welcome_screen.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen>{
         final user = User.fromJson(data);
 
         await storage.write(key: 'token', value: token);
+        await storage.write(key: 'id', value: user.id.toString());
 
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => WelcomeScreen(userName: user.name)));
       }else{
@@ -170,6 +172,7 @@ class _LoginScreenState extends State<LoginScreen>{
               ),
             ),
             const SizedBox(height: 50),
+            //Кнопка войти
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -184,6 +187,24 @@ class _LoginScreenState extends State<LoginScreen>{
                   ),
                 ),
                 child: const Text('Войти', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            SizedBox(height: 15,),
+            //Кнопка зарегистрироваться
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => RegisterScreen()));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurpleAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Зарегистрироваться', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ),
             const SizedBox(height: 20),

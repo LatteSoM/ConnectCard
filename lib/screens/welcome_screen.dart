@@ -1,3 +1,4 @@
+import 'package:connect_card/screens/main_screen.dart';
 import 'package:connect_card/screens/profile_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -37,7 +38,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
     Future.delayed(Duration(seconds: 2), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => ProfileScreen()),
+        MaterialPageRoute(builder: (context) => MainScreen()),
       );
     });
   }

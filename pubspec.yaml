@@ -15,6 +15,12 @@ dependencies:
   flutter_dotenv: ^5.1.0
   icons_plus: 5.0.0
   flutter_secure_storage: ^9.2.4
+  bottom_navy_bar: ^6.1.0
+  qr_flutter: ^4.1.0
+  share_plus: ^11.0.0
+  qr_code_scanner: ^1.0.1
+  permission_handler: ^12.0.1
+  mask_text_input_formatter: ^2.4.0
 
 dev_dependencies:
   flutter_test:
