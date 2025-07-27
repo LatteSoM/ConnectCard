@@ -3,6 +3,8 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
 from datetime import timedelta
 from typing import Optional
+
+from app.encryption import decrypt_data
 from ..dependencies import get_session
 from ..models.models import User
 from .utils import verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
@@ -48,6 +50,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
     user = session.exec(select(User).where(User.login == token_data.username)).first()
     if user is None:
         raise credentials_exception
+    
+    user.email = decrypt_data(user.email)
+    user.name = decrypt_data(user.name)
+    user.phone = decrypt_data(user.phone) if user.phone else None
     return user
 
 @router.post("/register", response_model=Token)
