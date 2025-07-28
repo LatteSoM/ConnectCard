@@ -130,35 +130,36 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
     }
 
 @router.post("/refresh", response_model=Token)
-async def refresh_token(refresh_token: str = Body(...), session: Session = Depends(get_session)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate refresh token",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+async def refresh_token(refresh_token: str = Body(...)):
     try:
         payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
+        username = payload.get("sub")
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+
+        if not username or not jti or not exp:
+            raise HTTPException(status_code=401, detail="Invalid token payload")
+
+        # Проверка: уже использован?
+        if redis_client.get(f"revoked:{jti}"):
+            raise HTTPException(status_code=401, detail="Refresh token revoked or used")
+
+        # Отзываем старый токен
+        ttl = int(exp - datetime.utcnow().timestamp())
+        redis_client.setex(f"revoked:{jti}", ttl, "true")
+
+        # Генерируем новые токены
+        new_access_token = create_access_token(data={"sub": username})
+        new_refresh_token = create_refresh_token(data={"sub": username})
+
+        return {
+            "access_token": new_access_token,
+            "refresh_token": new_refresh_token,
+            "token_type": "bearer"
+        }
+
     except JWTError:
-        raise credentials_exception
-
-    user = session.exec(select(User).where(User.login == username)).first()
-    if user is None:
-        raise credentials_exception
-
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": username}, expires_delta=access_token_expires
-    )
-    new_refresh_token = create_refresh_token(data={"sub": username})
-    
-    return {
-        "access_token": access_token,
-        "refresh_token": new_refresh_token,
-        "token_type": "bearer"
-    }
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
 
 @router.post("/logout")
 def logout(token: str = Depends(oauth2_scheme)):

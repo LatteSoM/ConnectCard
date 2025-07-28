@@ -39,6 +39,17 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) 
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+    to_encode = data.copy()
+    jti = str(uuid4())
+    to_encode.update({"jti": jti})
+
+    expire = datetime.utcnow() + (expires_delta or timedelta(days=7)) # Refresh на 7 дней
+    to_encode.update({"exp": expire})
+
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()
     jti = str(uuid4())  # генерируем уникальный ID токена
