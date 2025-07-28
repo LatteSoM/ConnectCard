@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
+from uuid import UUID
 from ..database import get_session
 from ..models.models import ContactInfo
 from pydantic import BaseModel
@@ -22,7 +23,7 @@ class BulkContactInfoCreate(BaseModel):
     contacts: List[ContactInfoCreate]
 
 class ContactInfoResponse(ContactInfoBase):
-    id: int
+    id: UUID
 
     class Config:
         from_attributes = True
@@ -75,14 +76,14 @@ def read_contact_infos(skip: int = 0, limit: int = 100, session: Session = Depen
     return contact_infos
 
 @router.get("/{contact_info_id}", response_model=ContactInfoResponse)
-def read_contact_info(contact_info_id: int, session: Session = Depends(get_session)):
+def read_contact_info(contact_info_id: UUID, session: Session = Depends(get_session)):
     contact_info = session.exec(select(ContactInfo).where(ContactInfo.id == contact_info_id)).first()
     if contact_info is None:
         raise HTTPException(status_code=404, detail="Contact info not found")
     return contact_info
 
 @router.put("/{contact_info_id}", response_model=ContactInfoResponse)
-def update_contact_info(contact_info_id: int, contact_info: ContactInfoCreate, session: Session = Depends(get_session)):
+def update_contact_info(contact_info_id: UUID, contact_info: ContactInfoCreate, session: Session = Depends(get_session)):
     db_contact_info = session.exec(select(ContactInfo).where(ContactInfo.id == contact_info_id)).first()
     if db_contact_info is None:
         raise HTTPException(status_code=404, detail="Contact info not found")
@@ -95,7 +96,7 @@ def update_contact_info(contact_info_id: int, contact_info: ContactInfoCreate, s
     return db_contact_info
 
 @router.delete("/{contact_info_id}")
-def delete_contact_info(contact_info_id: int, session: Session = Depends(get_session)):
+def delete_contact_info(contact_info_id: UUID, session: Session = Depends(get_session)):
     contact_info = session.exec(select(ContactInfo).where(ContactInfo.id == contact_info_id)).first()
     if contact_info is None:
         raise HTTPException(status_code=404, detail="Contact info not found")

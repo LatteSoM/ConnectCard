@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
+from uuid import UUID
 from ..database import get_session
 from ..models.models import Contact, Card, User, Event
 from pydantic import BaseModel
@@ -11,15 +12,15 @@ router = APIRouter(
 )
 
 class ContactBase(BaseModel):
-    card_id: int
-    user_id: int
-    event_id: int | None = None
+    card_id: UUID
+    user_id: UUID
+    event_id: UUID | None = None
 
 class ContactCreate(ContactBase):
     pass
 
 class ContactResponse(ContactBase):
-    id: int
+    id: UUID
     card: Card
     user: User
     event: Event | None = None
@@ -58,14 +59,14 @@ def read_contacts(skip: int = 0, limit: int = 100, session: Session = Depends(ge
     return contacts
 
 @router.get("/{contact_id}", response_model=ContactResponse)
-def read_contact(contact_id: int, session: Session = Depends(get_session)):
+def read_contact(contact_id: UUID, session: Session = Depends(get_session)):
     contact = session.exec(select(Contact).where(Contact.id == contact_id)).first()
     if contact is None:
         raise HTTPException(status_code=404, detail="Contact not found")
     return contact
 
 @router.put("/{contact_id}", response_model=ContactResponse)
-def update_contact(contact_id: int, contact: ContactCreate, session: Session = Depends(get_session)):
+def update_contact(contact_id: UUID, contact: ContactCreate, session: Session = Depends(get_session)):
     db_contact = session.exec(select(Contact).where(Contact.id == contact_id)).first()
     if db_contact is None:
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -94,7 +95,7 @@ def update_contact(contact_id: int, contact: ContactCreate, session: Session = D
     return db_contact
 
 @router.delete("/{contact_id}")
-def delete_contact(contact_id: int, session: Session = Depends(get_session)):
+def delete_contact(contact_id: UUID, session: Session = Depends(get_session)):
     contact = session.exec(select(Contact).where(Contact.id == contact_id)).first()
     if contact is None:
         raise HTTPException(status_code=404, detail="Contact not found")

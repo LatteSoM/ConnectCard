@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from typing import List
+from uuid import UUID
 from ..database import get_session
 from ..models.models import User, Card, ContactInfo, LinkWidget, CardContactInfo, CardLinkWidget, Analytics, AuditLog
 from pydantic import BaseModel, EmailStr
@@ -44,7 +45,7 @@ class UserUpdate(BaseModel):
     vk_authorized: bool | None = None
 
 class UserResponse(UserBase):
-    id: int
+    id: UUID
     cards: List[Card]
 
     class Config:
@@ -116,7 +117,7 @@ def read_users(
 
 @router.get("/{user_id}", response_model=UserResponse)
 async def read_user(
-    user_id: int,
+    user_id: UUID,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
@@ -133,7 +134,7 @@ async def read_user(
 
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(
-    user_id: int,
+    user_id: UUID,
     user: UserUpdate,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -187,7 +188,7 @@ def update_user(
     return db_user
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, session: Session = Depends(get_session)):
+def delete_user(user_id: UUID, session: Session = Depends(get_session)):
     user = session.exec(select(User).where(User.id == user_id)).first()
     if user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
@@ -208,7 +209,7 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
 
 @router.get("/card/{card_id}", response_model=dict)
 async def get_card_details(
-    card_id: int, 
+    card_id: UUID, 
     request: Request, 
     session: Session = Depends(get_session),
 ):
@@ -272,7 +273,7 @@ async def get_card_details(
 # Запрос на удаление данных пользователя
 @router.post("/{user_id}/request-deletion")
 async def request_deletion(
-    user_id: int,
+    user_id: UUID,
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):

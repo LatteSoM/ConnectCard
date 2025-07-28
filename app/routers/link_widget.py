@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
+from uuid import UUID
 from ..database import get_session
 from ..models.models import LinkWidget
 from pydantic import BaseModel
@@ -24,7 +25,7 @@ class BulkLinkWidgetCreate(BaseModel):
     widgets: List[LinkWidgetCreate]
 
 class LinkWidgetResponse(LinkWidgetBase):
-    id: int
+    id: UUID
 
     class Config:
         from_attributes = True
@@ -80,14 +81,14 @@ def read_link_widgets(skip: int = 0, limit: int = 100, session: Session = Depend
     return link_widgets
 
 @router.get("/{link_widget_id}", response_model=LinkWidgetResponse)
-def read_link_widget(link_widget_id: int, session: Session = Depends(get_session)):
+def read_link_widget(link_widget_id: UUID, session: Session = Depends(get_session)):
     link_widget = session.exec(select(LinkWidget).where(LinkWidget.id == link_widget_id)).first()
     if link_widget is None:
         raise HTTPException(status_code=404, detail="Link widget not found")
     return link_widget
 
 @router.put("/{link_widget_id}", response_model=LinkWidgetResponse)
-def update_link_widget(link_widget_id: int, link_widget: LinkWidgetCreate, session: Session = Depends(get_session)):
+def update_link_widget(link_widget_id: UUID, link_widget: LinkWidgetCreate, session: Session = Depends(get_session)):
     db_link_widget = session.exec(select(LinkWidget).where(LinkWidget.id == link_widget_id)).first()
     if db_link_widget is None:
         raise HTTPException(status_code=404, detail="Link widget not found")
@@ -100,7 +101,7 @@ def update_link_widget(link_widget_id: int, link_widget: LinkWidgetCreate, sessi
     return db_link_widget
 
 @router.delete("/{link_widget_id}")
-def delete_link_widget(link_widget_id: int, session: Session = Depends(get_session)):
+def delete_link_widget(link_widget_id: UUID, session: Session = Depends(get_session)):
     link_widget = session.exec(select(LinkWidget).where(LinkWidget.id == link_widget_id)).first()
     if link_widget is None:
         raise HTTPException(status_code=404, detail="Link widget not found")

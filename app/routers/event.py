@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import List
+from uuid import UUID
 from ..database import get_session
 from ..models.models import Event
 from pydantic import BaseModel
@@ -20,7 +21,7 @@ class EventCreate(EventBase):
     pass
 
 class EventResponse(EventBase):
-    id: int
+    id: UUID
 
     class Config:
         from_attributes = True
@@ -39,14 +40,14 @@ def read_events(skip: int = 0, limit: int = 100, session: Session = Depends(get_
     return events
 
 @router.get("/{event_id}", response_model=EventResponse)
-def read_event(event_id: int, session: Session = Depends(get_session)):
+def read_event(event_id: UUID, session: Session = Depends(get_session)):
     event = session.exec(select(Event).where(Event.id == event_id)).first()
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")
     return event
 
 @router.put("/{event_id}", response_model=EventResponse)
-def update_event(event_id: int, event: EventCreate, session: Session = Depends(get_session)):
+def update_event(event_id: UUID, event: EventCreate, session: Session = Depends(get_session)):
     db_event = session.exec(select(Event).where(Event.id == event_id)).first()
     if db_event is None:
         raise HTTPException(status_code=404, detail="Event not found")
@@ -59,7 +60,7 @@ def update_event(event_id: int, event: EventCreate, session: Session = Depends(g
     return db_event
 
 @router.delete("/{event_id}")
-def delete_event(event_id: int, session: Session = Depends(get_session)):
+def delete_event(event_id: UUID, session: Session = Depends(get_session)):
     event = session.exec(select(Event).where(Event.id == event_id)).first()
     if event is None:
         raise HTTPException(status_code=404, detail="Event not found")

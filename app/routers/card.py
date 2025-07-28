@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from datetime import datetime
 from sqlmodel import Session, select, func
 from typing import List, Optional
+from uuid import UUID
 
 from ..auth.auth import get_current_user
 from ..database import get_session
@@ -22,8 +23,8 @@ class CardBase(BaseModel):
     about: str | None = None
 
 class CardCreate(CardBase):
-    contact_info_ids: List[int] = []
-    link_widget_ids: List[int] = []
+    contact_info_ids: List[UUID] = []
+    link_widget_ids: List[UUID] = []
 
 class CardResponse(CardBase):
     id: int
@@ -36,7 +37,7 @@ class CardResponse(CardBase):
         
 class ActionCreate(BaseModel):
     action_type: str  # "share", "add_to_contacts", "link_click"
-    link_widget_id: Optional[int] = None  # Для действия "link_click"
+    link_widget_id: Optional[UUID] = None  # Для действия "link_click"
 
 
 @router.post("/", response_model=CardResponse)
@@ -74,7 +75,7 @@ def read_cards(skip: int = 0, limit: int = 100, session: Session = Depends(get_s
     return cards
 
 @router.get("/{card_id}", response_model=CardResponse)
-def read_card(card_id: int, session: Session = Depends(get_session)):
+def read_card(card_id: UUID, session: Session = Depends(get_session)):
     card = session.exec(select(Card).where(Card.id == card_id)).first()
     if card is None:
         raise HTTPException(status_code=404, detail="Card not found")
@@ -82,7 +83,7 @@ def read_card(card_id: int, session: Session = Depends(get_session)):
 
 @router.get("/user/{user_id}", response_model=List[CardResponse])
 def read_user_cards(
-    user_id: int,
+    user_id: UUID,
     session: Session = Depends(get_session)
 ):
     """
@@ -105,7 +106,7 @@ def read_user_cards(
     return cards
 
 @router.put("/{card_id}", response_model=CardResponse)
-def update_card(card_id: int, card: CardCreate, session: Session = Depends(get_session)):
+def update_card(card_id: UUID, card: CardCreate, session: Session = Depends(get_session)):
     db_card = session.exec(select(Card).where(Card.id == card_id)).first()
     if db_card is None:
         raise HTTPException(status_code=404, detail="Card not found")
@@ -129,7 +130,7 @@ def update_card(card_id: int, card: CardCreate, session: Session = Depends(get_s
     return db_card
 
 @router.delete("/{card_id}")
-def delete_card(card_id: int, session: Session = Depends(get_session)):
+def delete_card(card_id: UUID, session: Session = Depends(get_session)):
     card = session.exec(select(Card).where(Card.id == card_id)).first()
     if card is None:
         raise HTTPException(status_code=404, detail="Card not found")
@@ -140,7 +141,7 @@ def delete_card(card_id: int, session: Session = Depends(get_session)):
 
 
 @router.get("/{card_id}/qr-link", response_model=dict)
-async def get_card_qr_link(card_id: int, session: Session = Depends(get_session)):
+async def get_card_qr_link(card_id: UUID, session: Session = Depends(get_session)):
     
     card = session.exec(select(Card).where(Card.id == card_id)).first()
     if not card:
@@ -153,7 +154,7 @@ async def get_card_qr_link(card_id: int, session: Session = Depends(get_session)
 
 @router.get("/{card_id}/analytics", response_model=dict)
 async def get_card_analytics(
-    card_id: int,
+    card_id: UUID,
     start_date: Optional[datetime] = Query(None, description="Filter by start date"),
     end_date: Optional[datetime] = Query(None, description="Filter by end date"),
     session: Session = Depends(get_session)
@@ -278,7 +279,7 @@ async def get_card_analytics(
 
 
 @router.post("/{card_id}/action", response_model=dict)
-async def record_action(card_id: int, action: ActionCreate, request: Request, session: Session = Depends(get_session)):
+async def record_action(card_id: UUID, action: ActionCreate, request: Request, session: Session = Depends(get_session)):
     # Проверка существования карточки
     card = session.exec(select(Card).where(Card.id == card_id)).first()
     if not card:
