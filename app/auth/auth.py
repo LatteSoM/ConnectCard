@@ -36,8 +36,7 @@ class UserCreate(BaseModel):
     email: str
     name: str
 
-@router.get("/current_user")
-async def get_current_user(token: str = Depends(oauth2_scheme), session: Session = Depends(get_session)):
+def validate_token_and_get_payload(token: str = Depends(oauth2_scheme)) -> dict:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -45,32 +44,31 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        jti: str = payload.get("jti")
-
-        if username is None or jti is None:
+        jti = payload.get("jti")
+        if not jti or redis_client.get(f"revoked:{jti}"):
             raise credentials_exception
-
-        # Проверка: отозван ли токен
-        if redis_client.get(f"revoked:{jti}"):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token has been revoked",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        token_data = TokenData(username=username)
+        return payload
     except JWTError:
         raise credentials_exception
+
+@router.get("/current_user")
+async def get_current_user(
+    payload: dict = Depends(validate_token_and_get_payload),
+    session: Session = Depends(get_session)
+):
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid token")
     
-    user = session.exec(select(User).where(User.login == token_data.username)).first()
-    if user is None:
-        raise credentials_exception
-    
+    user = session.exec(select(User).where(User.login == username)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
     user.email = decrypt_data(user.email)
     user.name = decrypt_data(user.name)
     user.phone = decrypt_data(user.phone) if user.phone else None
     return user
+
 
 
 @router.post("/register", response_model=Token)
