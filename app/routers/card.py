@@ -97,11 +97,11 @@ def read_user_cards(
         .where(Card.user_id == user_id)
     ).all()
     
-    if not cards:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No cards found for user with id {user_id}"
-        )
+    # if not cards:
+    #     raise HTTPException(
+    #         status_code=404,
+    #         detail=f"No cards found for user with id {user_id}"
+    #     )
     
     return cards
 
