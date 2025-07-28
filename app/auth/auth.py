@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from ..redis_client import redis_client
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import Session, select
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Optional
 
 from app.encryption import decrypt_data
@@ -45,8 +46,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        if username is None:
+        jti: str = payload.get("jti")
+
+        if username is None or jti is None:
             raise credentials_exception
+
+        # Проверка: отозван ли токен
+        if redis_client.get(f"revoked:{jti}"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been revoked",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
@@ -59,6 +71,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), session: Session
     user.name = decrypt_data(user.name)
     user.phone = decrypt_data(user.phone) if user.phone else None
     return user
+
 
 @router.post("/register", response_model=Token)
 def register(user_data: UserCreate, session: Session = Depends(get_session)):
@@ -148,6 +161,28 @@ async def refresh_token(refresh_token: str = Body(...), session: Session = Depen
         "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }
+
+@router.post("/logout")
+def logout(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        jti = payload.get("jti")
+        exp = payload.get("exp")
+        if not jti or not exp:
+            raise HTTPException(status_code=400, detail="Invalid token structure")
+
+        # времени до истечения токена
+        ttl = int(exp - datetime.utcnow().timestamp())
+        
+        # jti (уникальный ID токена, или айдишник JWT если тебе угодно) вместо полного JWT
+        # Кладём jti в Redis
+        redis_client.setex(f"revoked:{jti}", ttl, "true")
+
+        return {"message": "Successfully logged out"}
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 
 
 
