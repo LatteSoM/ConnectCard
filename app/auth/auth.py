@@ -7,9 +7,11 @@ from typing import Optional
 from app.encryption import decrypt_data
 from ..dependencies import get_session
 from ..models.models import User
-from .utils import verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
+from .utils import create_refresh_token, verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
 from pydantic import BaseModel
 from jose import JWTError, jwt
+from fastapi import Body
+
 
 router = APIRouter(
     prefix="/auth",
@@ -20,7 +22,9 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
+
 
 class TokenData(BaseModel):
     username: Optional[str] = None
@@ -83,7 +87,14 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
     access_token = create_access_token(
         data={"sub": user_data.login}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+
+    refresh_token = create_refresh_token(data={"sub": user_data.login})
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
 
 @router.post("/token", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Session = Depends(get_session)):
@@ -99,7 +110,45 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
     access_token = create_access_token(
         data={"sub": user.login}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"} 
+    refresh_token = create_refresh_token(data={"sub": user.login})
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
+
+@router.post("/refresh", response_model=Token)
+async def refresh_token(refresh_token: str = Body(...), session: Session = Depends(get_session)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate refresh token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = session.exec(select(User).where(User.login == username)).first()
+    if user is None:
+        raise credentials_exception
+
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": username}, expires_delta=access_token_expires
+    )
+    new_refresh_token = create_refresh_token(data={"sub": username})
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": new_refresh_token,
+        "token_type": "bearer"
+    }
+
 
 
 #Register a new User
@@ -116,3 +165,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), session: Sessi
 #Token
 # curl -X GET "http://localhost:8000/protected-route" \
 #      -H "Authorization: Bearer <your_token>"
+
+#Refresh
+# curl -X POST "http://localhost:8000/auth/refresh" \
+#      -H "Content-Type: application/json" \
+#      -d '{"refresh_token": "<your_refresh_token>"}'
