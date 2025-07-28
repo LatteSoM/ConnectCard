@@ -146,10 +146,14 @@ def update_user(
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     
     # Проверка, не занят ли новый email или логин другого пользователя
-    if user.email != db_user.email:
-        if session.exec(select(User).where(User.email == user.email)).first():
+    # if user.email != db_user.email:
+    #     if session.exec(select(User).where(User.email == user.email)).first():
+    #         raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+    if user.email != decrypt_data(db_user.email):
+        if session.exec(select(User).where(User.email == encrypt_data(user.email))).first():
             raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
-    if user.login != db_user.login:
+
+    if user.login != decrypt_data(db_user.login):
         if session.exec(select(User).where(User.login == user.login)).first():
             raise HTTPException(status_code=400, detail="Логин уже занят")
     
