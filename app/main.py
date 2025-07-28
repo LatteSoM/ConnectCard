@@ -1,10 +1,16 @@
+import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import card, contact_info, event, link_widget, user, contact
 from .auth.auth import router as auth_router
 from .database import create_db_and_tables
 
 app = FastAPI(title="ConnectCard API")
+AVATAR_DIR = "static/avatars"
+os.makedirs(AVATAR_DIR, exist_ok=True)
+
+app.mount("/avatars", StaticFiles(directory=AVATAR_DIR), name="avatars")
 
 # Configure CORS
 app.add_middleware(

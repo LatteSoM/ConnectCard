@@ -1,3 +1,5 @@
+import uuid
+from uuid import UUID, uuid4
 from sqlmodel import SQLModel, Field, Relationship
 from typing import List, Optional
 from datetime import datetime
@@ -16,7 +18,7 @@ class CardLinkWidget(SQLModel, table=True):
 
 # Таблица для ссылок
 class LinkWidget(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     link: str
     icon: Optional[str] = None
     description: Optional[str] = None
@@ -26,7 +28,7 @@ class LinkWidget(SQLModel, table=True):
 
 # Таблица для контактной информации
 class ContactInfo(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     icon: Optional[str] = None
     name: str
     description: Optional[str] = None
@@ -34,7 +36,7 @@ class ContactInfo(SQLModel, table=True):
 
 # Таблица для событий
 class Event(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     date: datetime
     name: str
     place: Optional[str] = None
@@ -42,7 +44,7 @@ class Event(SQLModel, table=True):
 
 # Таблица для аналитики
 class Analytics(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     card_id: int = Field(foreign_key="card.id")
     device_type: str  # Например, "desktop", "mobile", "tablet"
     action_type: str  # Например, "view", "share", "add_to_contacts", "link_click"
@@ -54,7 +56,7 @@ class Analytics(SQLModel, table=True):
 
 # Таблица для карточки
 class Card(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     avatar: Optional[str] = None
     fullname: str
     company: Optional[str] = None
@@ -69,7 +71,7 @@ class Card(SQLModel, table=True):
 
 # Таблица для пользователя
 class User(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     avatar: Optional[str] = None
     name: str
     phone: Optional[str] = None
@@ -96,7 +98,7 @@ class User(SQLModel, table=True):
 
 # Таблица для контакта
 class Contact(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     card_id: int = Field(foreign_key="card.id")
     user_id: int = Field(foreign_key="user.id")
     event_id: Optional[int] = Field(default=None, foreign_key="event.id")
@@ -105,7 +107,7 @@ class Contact(SQLModel, table=True):
     event: Optional[Event] = Relationship(back_populates="contacts")
 
 class AuditLog(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
     action: str  # "create_user", "update_user", "delete_user"
     timestamp: datetime = Field(default_factory=datetime.utcnow)
