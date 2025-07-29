@@ -76,6 +76,7 @@ class User(SQLModel, table=True):
     name: str
     phone: Optional[str] = None
     email: str
+    email_hash = str  # Хэш email для проверки уникальности
     is_premium_user: bool = Field(default=False)
     telegram_authorized: bool = Field(default=False)
     vk_authorized: bool = Field(default=False)

@@ -8,7 +8,8 @@ from typing import Optional
 from app.encryption import decrypt_data
 from ..dependencies import get_session
 from ..models.models import User
-from .utils import create_refresh_token, verify_password, get_password_hash, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
+from ..encryption import encrypt_data
+from .utils import create_refresh_token, verify_password, get_password_hash, create_access_token, hash_email, ACCESS_TOKEN_EXPIRE_MINUTES, SECRET_KEY, ALGORITHM
 from pydantic import BaseModel
 from jose import JWTError, jwt
 from fastapi import Body
@@ -73,7 +74,7 @@ async def get_current_user(
 
 @router.post("/register", response_model=Token)
 def register(user_data: UserCreate, session: Session = Depends(get_session)):
-    # Check if user already exists
+    # Проверка что пользователь уже сузествует по логину
     existing_user = session.exec(select(User).where(User.login == user_data.login)).first()
     if existing_user:
         raise HTTPException(
@@ -81,12 +82,21 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
             detail="Username already registered"
         )
     
+    # проверка что email уже занят по хэшам
+    email_hash = hash_email(user_data.email)
+    if session.exec(select(User).where(User.email_hash == email_hash)).first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already registered"
+        )
+    
     # Create new user
     hashed_password = get_password_hash(user_data.password)
     db_user = User(
         login=user_data.login,
         password=hashed_password,
-        email=user_data.email,
+        email=encrypt_data(user_data.email),  # Шифруем email
+        email_hash=email_hash,  # Сохраняем хэш email
         name=user_data.name
     )
     session.add(db_user)
@@ -98,7 +108,6 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
     access_token = create_access_token(
         data={"sub": user_data.login}, expires_delta=access_token_expires
     )
-
     refresh_token = create_refresh_token(data={"sub": user_data.login})
 
     return {

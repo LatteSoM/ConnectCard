@@ -1,4 +1,5 @@
 import os
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
@@ -22,6 +23,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
+def hash_email(email: str) -> str:
+    """Генерирует SHA-256 хэш для email."""
+    if not email or not isinstance(email, str):
+        return None
+    return hashlib.sha256(email.lower().encode()).hexdigest()
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     to_encode = data.copy()

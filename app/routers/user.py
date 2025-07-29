@@ -60,8 +60,12 @@ async def create_user(user: UserCreate, session: Session = Depends(get_session))
     if not user.consent_given:
         raise HTTPException(status_code=400, detail="Consent for personal data processing is required")
     
-    if session.exec(select(User).where(User.email == encrypt_data(user.email))).first():
+    # Проверка email на уникальность по хэшам
+    email_hash = hash_email(user.email)
+    if session.exec(select(User).where(User.email_hash == email_hash)).first():
         raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Проверка логина на занятость
     if session.exec(select(User).where(User.login == user.login)).first():
         raise HTTPException(status_code=400, detail="Login already taken")
     
@@ -71,6 +75,7 @@ async def create_user(user: UserCreate, session: Session = Depends(get_session))
         name=encrypt_data(user.name),
         phone=encrypt_data(user.phone) if user.phone else None,
         email=encrypt_data(user.email),
+        email_hash=email_hash,  # Сохраняем хэш email
         is_premium_user=user.is_premium_user,
         telegram_authorized=user.telegram_authorized,
         vk_authorized=user.vk_authorized,
@@ -93,6 +98,7 @@ async def create_user(user: UserCreate, session: Session = Depends(get_session))
     )
     session.add(audit_log)
     session.commit()
+    
     # Дешифрование данных для ответа
     db_user.name = decrypt_data(db_user.name)
     db_user.email = decrypt_data(db_user.email)
@@ -145,10 +151,6 @@ def update_user(
     if db_user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     
-    # Проверка, не занят ли новый email или логин другого пользователя
-    # if user.email != db_user.email:
-    #     if session.exec(select(User).where(User.email == user.email)).first():
-    #         raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
     if user.email != decrypt_data(db_user.email):
         if session.exec(select(User).where(User.email == encrypt_data(user.email))).first():
             raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
