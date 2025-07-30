@@ -153,9 +153,12 @@ def update_user(
     if db_user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     
-    if user.email != decrypt_data(db_user.email):
-        if session.exec(select(User).where(User.email == encrypt_data(user.email))).first():
-            raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+    email_hash = hash_email(user.email)
+    if session.exec(select(User).where(User.email_hash == email_hash)).first():
+        raise HTTPException(
+            status_code=400,
+            detail="Email уже зарегистрирован"
+        )
 
     if user.login != decrypt_data(db_user.login):
         if session.exec(select(User).where(User.login == user.login)).first():
