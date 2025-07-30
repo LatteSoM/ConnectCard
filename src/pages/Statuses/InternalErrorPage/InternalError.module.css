@@ -1,0 +1,30 @@
+.goToHomeBtn {
+    box-shadow: 0 0 0 !important;
+}
+.goToLoginBtn {
+
+    box-shadow: 0 0 0 !important;
+}
+
+.errorContainer {
+    display: flex;
+    flex-direction: column;
+    /* gap: 1rem; */
+    padding: 0;
+    margin: 0px 0px 24px 0px;
+    align-items: center;
+}
+
+.errorTitle {
+    font-size: 2em;
+}
+
+.errorBlock {
+    padding: 12px;
+    background: #100E12;
+    border-radius: 8px;
+    border: 1px solid #1B1A20;
+    max-width: 50%;
+    text-align: start;
+    color: #8c8c8c;
+}

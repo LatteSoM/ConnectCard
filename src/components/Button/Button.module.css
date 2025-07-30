@@ -1,0 +1,78 @@
+.button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.button:hover:not(:disabled) {
+  background-color: #2e2137;
+  border-color: #47295f;
+}
+
+.button:focus,
+.button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Разные варианты */
+
+.default {
+  background-color: #221829;
+  border: 1px solid #281c31;
+  color: white;
+  transition: 150ms;
+}
+
+.primary {
+  background-color: #794bf7;
+  border-color: #794bf7;
+  color: white;
+  transition: 150ms;
+}
+
+.vk {
+  background-color: #4C75A3;
+  border-color: #4C75A3;
+  color: white;
+  transition: 150ms;
+}
+
+.telegram {
+  background-color: #448AFF;
+  border-color: #448AFF;
+  color: white;
+  transition: 150ms;
+}
+
+.nav {
+  background-color: transparent;
+  color: white;
+  border: 1px solid #794bf7;
+  transition: 150ms;
+}
+
+.reg {
+  background-color: #794bf7;
+  color: white;
+  border: 1px solid #8c68ec;
+  height: 40px;
+  transition: 150ms;
+}
+.button.reg:hover {
+  background-color: #6d43e1;
+  border: 1px solid #9675f4;
+  transition: 150ms;
+}

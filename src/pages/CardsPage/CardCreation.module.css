@@ -1,0 +1,26 @@
+.container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    background: #121015;
+    min-height: 280px;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #1B1A20;
+}
+
+.creationContainer {
+    width: 100%;
+}
+
+.cardImageContainer {
+
+}
+
+.cardFormContainer {
+    width: 100%;
+}
+
+.cardForm {
+    width: 100%;
+}

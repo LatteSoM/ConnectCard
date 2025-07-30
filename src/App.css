@@ -1,0 +1,75 @@
+#root {
+  /* min-height: 100lvh; */
+  /* height: auto; */
+  height: 100vh;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0;
+  /* text-align: center; */
+}
+
+main {
+  /* height: 100lvh; */
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+.loadingContainer {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 
+:where(.css-dev-only-do-not-override-anzh6g).ant-layout, :where(.css-dev-only-do-not-override-anzh6g).ant-layout * {
+    box-sizing: border-box;
+    max-height: none;
+    height: auto;
+} */
+
+:where(.css-dev-only-do-not-override-anzh6g).ant-layout {
+    display: flex;
+    flex: auto;
+    flex-direction: column;
+    height: -webkit-fill-available;
+    min-height: 0;
+    background: #141218;
+}

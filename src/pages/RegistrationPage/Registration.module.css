@@ -1,0 +1,174 @@
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100lvh;
+    width: 100%;
+    background-color: #141218;
+    gap: 1em;
+
+}
+
+.container {
+    /* display: flex;
+    flex-direction: column; */
+
+    background: #121015;
+    min-height: 280px;
+    /* min-width: 30%; */
+    width: 40em;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #1B1A20;
+}
+
+.titleBlock {
+    display: flex;
+    /* gap: .5rem; */
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    /* margin-bottom: 2rem; */
+}
+
+.titleBlockLogo {
+    height: 100%;
+}
+.titleBlockLogo img {
+    height: 100%;
+    padding: 10px;
+}
+
+.titleBlockText {
+    height: 100%;
+    padding: 5px;
+}
+
+.titleBlockText > .title {
+    font-size: 4rem;
+    padding: 0;
+    margin: 0;
+    text-box: auto;
+}
+.titleBlockText > .title > span{
+    color: #794bf7;
+}
+
+.titleBlockText > .subtitle {
+    font-size: 1.5rem;
+    color: #a6a6a6;
+}
+
+.loginFormContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.loginForm {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.loginBtn {
+    margin-top: 3rem;
+}
+
+.registerContainer {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
+.registerContainerText {
+    font-size: 0.9375rem;
+}
+
+.registerContainerText > a {
+    text-decoration: none;
+    /* color: #794bf7; */
+    margin-left: .5rem;
+}
+
+.socialContainer {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    justify-content: center;
+    gap: 1rem;
+}
+
+
+.socialDivider {
+    margin: 0;
+    -webkit-flex-shrink: 0;
+    -ms-flex-negative: 0;
+    flex-shrink: 0;
+    border-width: 0;
+    border-style: solid;
+    border-color: #1B1A20;
+    border-bottom-width: thin;
+    display: -webkit-box;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    text-align: center;
+    width: 100%;
+    gap: 1rem;
+    border: 0;
+    border-top-style: solid;
+    border-left-style: solid;
+}
+
+.socialDivider::before, .socialDivider::after {
+    width: 100%;
+    border-top: thin solid #1B1A20;
+    border-top-style: inherit;
+    content: "";
+    -webkit-align-self: center;
+    -ms-flex-item-align: center;
+    align-self: center;
+}
+
+.socialDividerMiddleText {
+    display: inline-block;
+    padding-left: calc(0.25rem * 1.2);
+    padding-right: calc(0.25rem * 1.2);
+    white-space: nowrap;
+}
+
+.socialOptionsContainer {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    align-content: center;
+    justify-content: center;
+}
+
+.touContainer {
+    display: flex;
+    margin-top: .5rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.touContainerText {
+    font-size: 0.7rem;
+    color: #3c3c3c;
+    padding: 0 10px 0 10px;
+}
+
+.touContainerText > a {
+
+    color: #535353;
+}
+
+.toHomePageContainer {
+
+}
+
+.toHomeLink {
+    font-weight: 200;
+}
