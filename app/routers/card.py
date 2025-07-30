@@ -27,7 +27,7 @@ class CardCreate(CardBase):
     link_widget_ids: List[UUID] = []
 
 class CardResponse(CardBase):
-    id: int
+    id: UUID
     contact_infos: List[ContactInfo]
     link_widgets: List[LinkWidget]
 
