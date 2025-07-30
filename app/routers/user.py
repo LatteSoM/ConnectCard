@@ -153,12 +153,22 @@ def update_user(
     if db_user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
     
-    email_hash = hash_email(user.email)
-    if session.exec(select(User).where(User.email_hash == email_hash)).first():
-        raise HTTPException(
-            status_code=400,
-            detail="Email уже зарегистрирован"
-        )
+    # email_hash = hash_email(user.email)
+    # if session.exec(select(User).where(User.email_hash == email_hash)).first():
+    #     raise HTTPException(
+    #         status_code=400,
+    #         detail="Email уже зарегистрирован"
+    #     )
+
+    # Проверка уникальности email, если он предоставлен
+    if user.email is not None:
+        email_hash = hash_email(user.email)
+        # Проверяем, что email не занят другим пользователем
+        existing_user = session.exec(select(User).where(User.email_hash == email_hash, User.id != user_id)).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email уже зарегистрирован")
+    else:
+        email_hash = db_user.email_hash  # Сохраняем текущий хэш, если email не меняется
 
     if user.login != decrypt_data(db_user.login):
         if session.exec(select(User).where(User.login == user.login)).first():
