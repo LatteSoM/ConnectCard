@@ -175,6 +175,9 @@ def update_user(
             else:
                 setattr(db_user, key, value)
     
+    if user.email is not None:
+        db_user.email_hash = email_hash
+
     # Обновление пароля, если он предоставлен
     if user.password:
         db_user.password = get_password_hash(user.password)
