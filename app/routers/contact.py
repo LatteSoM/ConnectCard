@@ -103,3 +103,8 @@ def delete_contact(contact_id: UUID, session: Session = Depends(get_session)):
     session.delete(contact)
     session.commit()
     return {"message": "Contact deleted successfully"} 
+
+@router.get("/user/{user_id}", response_model=List[ContactResponse])
+def read_contacts_by_user(user_id: UUID, session: Session = Depends(get_session)):
+    contacts = session.exec(select(Contact).where(Contact.user_id == user_id)).all()
+    return contacts
