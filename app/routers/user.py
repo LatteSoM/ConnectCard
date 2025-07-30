@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 from typing import List
 from uuid import UUID
+
+from app.auth.utils import hash_email
 from ..database import get_session
 from ..models.models import User, Card, ContactInfo, LinkWidget, CardContactInfo, CardLinkWidget, Analytics, AuditLog
 from pydantic import BaseModel, EmailStr

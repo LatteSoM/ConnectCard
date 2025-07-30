@@ -79,7 +79,7 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already registered"
+            detail="Имя пользователя уже зарегистрировано"
         )
     
     # проверка что email уже занят по хэшам
@@ -87,17 +87,17 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
     if session.exec(select(User).where(User.email_hash == email_hash)).first():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="Email уже зарегистрирован"
         )
     
-    # Create new user
+    # Создание пользователя
     hashed_password = get_password_hash(user_data.password)
     db_user = User(
         login=user_data.login,
         password=hashed_password,
         email=encrypt_data(user_data.email),  # Шифруем email
         email_hash=email_hash,  # Сохраняем хэш email
-        name=user_data.name
+        name=encrypt_data(user_data.name),
     )
     session.add(db_user)
     session.commit()
