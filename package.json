@@ -10,9 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@fortawesome/fontawesome-svg-core": "^7.0.0",
     "@fortawesome/free-brands-svg-icons": "^7.0.0",
     "@fortawesome/react-fontawesome": "^0.2.3",
+    "@mui/icons-material": "^7.3.0",
+    "@mui/material": "^7.3.0",
     "antd": "^5.26.0",
     "antd-img-crop": "^4.25.0",
     "antd-style": "^3.7.1",
@@ -20,7 +24,9 @@
     "clsx": "^2.1.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-router-dom": "^7.6.3"
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^7.6.3",
+    "styled-components": "^6.1.19"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",

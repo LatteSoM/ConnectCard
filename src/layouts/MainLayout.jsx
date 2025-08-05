@@ -11,7 +11,7 @@ const MainLayout = () => {
   return (
     <Layout>
       <AppHeader />
-      <Content style={{ padding: '0 48px' }}>
+      <Content style={{ padding: '0 15px' }}>
         <Breadcrumbs />
 
         <Outlet />

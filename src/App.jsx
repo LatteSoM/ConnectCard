@@ -14,7 +14,7 @@ import Registration from './pages/RegistrationPage/Registration';
 import User from './pages/UserPage/UserProfile'
 import CurrentUserProfile from './pages/UserPage/CurrUserProfile.jsx';
 import NotFound from './pages/Statuses/NotFoundPage/NotFound.jsx';
-
+import StatScreen from './pages/StatScreen/StatScreen.jsx';
 
 const App = () => {
   return (
@@ -30,12 +30,14 @@ const App = () => {
           <Route path="/users/card/:cardId" element={<CardDetails />} />
           <Route path="/users/:userId" element={<User />} />
           <Route path="/profile" element={<CurrentUserProfile />} />
+          <Route path="/stat" element={<StatScreen />} />
           
           <Route path="*" element={<NotFound />} />
         </Route>
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/registration" element={<Registration />} />
+
 
       </Routes>
     </Router>
