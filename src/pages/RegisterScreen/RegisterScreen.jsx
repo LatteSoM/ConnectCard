@@ -14,7 +14,8 @@ import { styled } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { FaTelegram, FaVk } from 'react-icons/fa';
 import axios from 'axios';
-import LogoNight from '../../assets/LogoNight.svg';
+import { useAuth } from '../../context/AuthContext'; // Используем useAuth
+import LogoNight from '../../assets/LogoNight.svg'; // Проверьте путь
 
 const Container = styled(Box)`
   padding: 24px;
@@ -52,62 +53,82 @@ const SocialButton = styled(Button)`
 `;
 
 const RegisterScreen = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [login, setLogin] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [consentGiven, setConsentGiven] = useState(false);
+  const [form, setForm] = useState({
+    login: '',
+    password: '',
+    email: '',
+    name: '',
+    consentGiven: false,
+  });
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth(); // Используем useAuth вместо AuthContext
   const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
-  const baseUrl = import.meta.env.VITE_BASE_URL;
 
-  const registerUser = async () => {
-    if (!name || !email || !login || !password || !confirmPassword) {
-      enqueueSnackbar('Обязательное поле', { variant: 'error' });
-      return;
+  const handleChange = (field) => (e) => {
+    const value = field === 'consentGiven' ? e.target.checked : e.target.value;
+    setForm({ ...form, [field]: value });
+    setErrors((prev) => ({ ...prev, [field]: null }));
+    setServerError('');
+  };
+
+  const handleSubmit = async () => {
+    const newErrors = {};
+    const loginRegex = /^[a-zA-Z0-9]{1,32}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const nameRegex = /^(?!.*\d)(?!.* {3,})[a-zA-Zа-яА-ЯёЁ\s'-]+$/u;
+
+    if (!form.login || !loginRegex.test(form.login)) {
+      newErrors.login = 'Логин должен содержать только латинские буквы и цифры, максимум 32 символа';
     }
-    if (!email.includes('@')) {
-      enqueueSnackbar('Некорректный email', { variant: 'error' });
-      return;
+    if (!form.password || form.password.length < 8) {
+      newErrors.password = 'Минимум 8 символов';
     }
-    if (password.length < 6) {
-      enqueueSnackbar('Минимум 6 символов', { variant: 'error' });
-      return;
+    if (!form.email || !emailRegex.test(form.email)) {
+      newErrors.email = 'Некорректный email';
     }
-    if (password !== confirmPassword) {
-      enqueueSnackbar('Пароли не совпадают', { variant: 'error' });
-      return;
+    if (!form.name || !nameRegex.test(form.name.trim())) {
+      newErrors.name = 'Имя не должно содержать цифры, спецсимволы или более двух пробелов подряд';
     }
-    if (!consentGiven) {
-      enqueueSnackbar('Необходимо согласие на обработку данных', { variant: 'error' });
+    if (!form.consentGiven) {
+      newErrors.consentGiven = 'Необходимо согласие на обработку данных';
+    }
+
+    if (Object.keys(newErrors).length) {
+      setErrors(newErrors);
       return;
     }
 
     try {
-      const response = await axios.post(
-        `${baseUrl}/auth/register`,
-        {
-          name: name.trim(),
-          email: email.trim(),
-          login: login.trim(),
-          password,
-        },
-        { headers: { 'Content-Type': 'application/json' } }
-      );
+      setLoading(true);
+      setErrors({});
+      setServerError('');
 
-      if (response.status === 200) {
-        enqueueSnackbar('Пользователь успешно зарегистрирован', { variant: 'success' });
-        navigate('/login');
+      const response = await axios.post('http://127.0.0.1:8002/auth/register', {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        login: form.login.trim(),
+        password: form.password,
+        consent_given: form.consentGiven, // Добавляем поле для соответствия API
+      });
+      const { access_token } = response.data;
+      localStorage.setItem('token', access_token);
+      await login(form.login, form.password);
+      enqueueSnackbar('Пользователь успешно зарегистрирован', { variant: 'success' });
+      navigate('/');
+    } catch (error) {
+      const detail = error.response?.data?.detail;
+      if (detail === 'Username already registered') {
+        setServerError('Логин уже занят. Один из вас мой напарник, а другой лживый...');
+      } else if (detail === 'Email уже зарегистрирован') {
+        setServerError('Эта почта уже занята');
       } else {
-        const error = response.data.detail;
-        enqueueSnackbar(
-          error === 'Username already registered' ? 'Данный логин уже занят' : 'Ошибка регистрации',
-          { variant: 'error' }
-        );
+        setServerError('Ошибка при регистрации. Попробуйте позже.');
       }
-    } catch (e) {
-      enqueueSnackbar('Извините, произошла ошибка сети', { variant: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -132,10 +153,13 @@ const RegisterScreen = () => {
       <Box sx={{ height: 50 }} />
       <TextField
         fullWidth
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        value={form.name}
+        onChange={handleChange('name')}
         placeholder="Имя"
         variant="filled"
+        error={!!errors.name}
+        helperText={errors.name}
+        inputProps={{ maxLength: 255 }}
         sx={{
           '& .MuiFilledInput-root': {
             backgroundColor: '#1A1A1A',
@@ -144,15 +168,19 @@ const RegisterScreen = () => {
           },
           '& .MuiInputBase-input': { color: '#fff' },
           '& .MuiInputLabel-root': { color: '#9C9C9C' },
+          '& .MuiFormHelperText-root': { color: 'red' },
         }}
       />
       <Box sx={{ height: 15 }} />
       <TextField
         fullWidth
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        value={form.email}
+        onChange={handleChange('email')}
         placeholder="Email"
         variant="filled"
+        error={!!errors.email}
+        helperText={errors.email}
+        inputProps={{ maxLength: 255 }}
         sx={{
           '& .MuiFilledInput-root': {
             backgroundColor: '#1A1A1A',
@@ -161,15 +189,19 @@ const RegisterScreen = () => {
           },
           '& .MuiInputBase-input': { color: '#fff' },
           '& .MuiInputLabel-root': { color: '#9C9C9C' },
+          '& .MuiFormHelperText-root': { color: 'red' },
         }}
       />
       <Box sx={{ height: 15 }} />
       <TextField
         fullWidth
-        value={login}
-        onChange={(e) => setLogin(e.target.value)}
+        value={form.login}
+        onChange={handleChange('login')}
         placeholder="Логин"
         variant="filled"
+        error={!!errors.login}
+        helperText={errors.login}
+        inputProps={{ maxLength: 32 }}
         sx={{
           '& .MuiFilledInput-root': {
             backgroundColor: '#1A1A1A',
@@ -178,16 +210,20 @@ const RegisterScreen = () => {
           },
           '& .MuiInputBase-input': { color: '#fff' },
           '& .MuiInputLabel-root': { color: '#9C9C9C' },
+          '& .MuiFormHelperText-root': { color: 'red' },
         }}
       />
       <Box sx={{ height: 15 }} />
       <TextField
         fullWidth
         type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
+        value={form.password}
+        onChange={handleChange('password')}
         placeholder="Пароль"
         variant="filled"
+        error={!!errors.password}
+        helperText={errors.password}
+        inputProps={{ maxLength: 255 }}
         sx={{
           '& .MuiFilledInput-root': {
             backgroundColor: '#1A1A1A',
@@ -196,16 +232,20 @@ const RegisterScreen = () => {
           },
           '& .MuiInputBase-input': { color: '#fff' },
           '& .MuiInputLabel-root': { color: '#9C9C9C' },
+          '& .MuiFormHelperText-root': { color: 'red' },
         }}
       />
       <Box sx={{ height: 15 }} />
       <TextField
         fullWidth
         type="password"
-        value={confirmPassword}
-        onChange={(e) => setConfirmPassword(e.target.value)}
+        value={form.password}
+        onChange={handleChange('password')}
         placeholder="Подтверждение пароля"
         variant="filled"
+        error={!!errors.password}
+        helperText={errors.password}
+        inputProps={{ maxLength: 255 }}
         sx={{
           '& .MuiFilledInput-root': {
             backgroundColor: '#1A1A1A',
@@ -214,25 +254,32 @@ const RegisterScreen = () => {
           },
           '& .MuiInputBase-input': { color: '#fff' },
           '& .MuiInputLabel-root': { color: '#9C9C9C' },
+          '& .MuiFormHelperText-root': { color: 'red' },
         }}
       />
       <Box sx={{ height: 15 }} />
       <FormControlLabel
         control={
           <Checkbox
-            checked={consentGiven}
-            onChange={(e) => setConsentGiven(e.target.checked)}
+            checked={form.consentGiven}
+            onChange={handleChange('consentGiven')}
             sx={{ color: '#7C4DFF', '&.Mui-checked': { color: '#7C4DFF' } }}
           />
         }
         label="Я согласен на обработку персональных данных"
         sx={{ color: '#fff', m: 0 }}
       />
+      {serverError && (
+        <Typography sx={{ color: 'red', fontSize: '0.9rem', textAlign: 'center', mt: 2 }}>
+          {serverError}
+        </Typography>
+      )}
       <Box sx={{ height: 30 }} />
       <Button
         fullWidth
         variant="contained"
-        onClick={registerUser}
+        onClick={handleSubmit}
+        disabled={loading}
         sx={{
           backgroundColor: '#7C4DFF',
           borderRadius: '12px',
@@ -242,7 +289,7 @@ const RegisterScreen = () => {
           textTransform: 'none',
         }}
       >
-        Создать аккаунт
+        {loading ? 'Загрузка...' : 'Создать аккаунт'}
       </Button>
       <Box sx={{ height: 20 }} />
       <Typography variant="caption" sx={{ color: '#9C9C9C' }}>

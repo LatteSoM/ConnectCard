@@ -75,7 +75,7 @@ const Registration = () => {
 
             //   await sleep(5000);
 
-            const response = await axios.post('http://127.0.0.1:8000/auth/register', form);
+            const response = await axios.post('http://127.0.0.1:8002/auth/register', form);
             const { access_token } = response.data;
             localStorage.setItem('token', access_token);
             await login(form.login, form.password);
