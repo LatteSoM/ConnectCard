@@ -1,21 +1,19 @@
 import classes from './User.module.css';
 import { useAuth } from '../../context/AuthContext';
 import {
-  UserOutlined, CloseOutlined, SmileFilled, EditOutlined,
+  UserOutlined, CloseOutlined, EditOutlined,
   MailOutlined, PhoneOutlined, LoadingOutlined
 } from '@ant-design/icons';
 import {
-  Avatar, Divider, Flex, Button, Spin
+  Avatar, Flex, Button, Spin
 } from 'antd';
 
 import testavatar from '../../assets/testusericon.jpg';
-import MyButton from '../../components/Button/Button.jsx';
 import EditProfileModal from './EditProfileModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 import NotFound from '../Statuses/NotFoundPage/NotFound.jsx';
 import NotAuthorized from '../Statuses/NotAuthorizedPage/NotAuthorized.jsx';
-import InternalError from '../Statuses/InternalErrorPage/InternalError.jsx';
 import { useState } from 'react';
 
 const CurrentUserProfile = () => {
@@ -29,7 +27,6 @@ const CurrentUserProfile = () => {
   );
   if (!accessToken) return <NotAuthorized />;
   if (!userLogin) return <NotFound />;
-
 
   const userCard = userLogin;
 
@@ -90,7 +87,7 @@ const CurrentUserProfile = () => {
           </Flex>
         </div>
 
-        <Divider size="small" type="vertical" className={classes.hrVert} />
+        <div className={classes.hrResponsive} />
 
         <div className={classes.socialAuthBlock}>
           <Flex className={classes.socialAuthContainer} gap='small' vertical justify='space-between'>

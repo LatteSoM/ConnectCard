@@ -1,0 +1,176 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  /* align-items: center; */
+  justify-content: center;
+  min-height: 100vh;
+  min-width: 100%;
+  background-color: #141218;
+  padding: 16px;
+}
+
+.container {
+  background: #121015;
+  width: 100%;
+  max-width: 90%; /* Увеличено для мобильных, убрано 40em */
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #1B1A20;
+}
+
+.avatar {
+  background: #7C4DFF;
+}
+
+.name {
+  font-size: 28px;
+  font-weight: bold;
+  color: #7C4DFF;
+  text-align: center;
+}
+
+.login {
+  font-size: 16px;
+  color: #a6a6a6;
+  text-align: center;
+}
+
+.card {
+  background: #1C1A1F;
+  border: 1px solid #2A272F;
+  border-radius: 12px;
+  width: 100%; /* Растягиваем карточку */
+  padding: 12px; /* Уменьшено для большей ширины контента */
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.socialField {
+  padding-bottom: 12px;
+  width: 100%;
+}
+
+.socialIcon {
+  font-size: 32px;
+  color: white;
+}
+
+.input {
+  background: #1B1A20;
+  border: 1px solid #2A272F;
+  border-radius: 12px;
+  color: white;
+  width: 100%; /* Растягиваем поля ввода */
+}
+
+.placeholder {
+  color: #a6a6a6;
+  font-size: 12px;
+}
+
+.text {
+  color: #a6a6a6;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.authButton {
+  font-size: 12px;
+  color: #7C4DFF !important;
+}
+
+.actionButton {
+  background: #1C1A1F !important;
+  border: 1px solid #2A272F !important;
+  border-radius: 12px !important;
+  color: white !important;
+  width: 100%; /* Растягиваем кнопки */
+}
+
+.saveButton {
+  background: #7C4DFF !important;
+}
+
+.modalIcon {
+  font-size: 50px;
+  color: white;
+}
+
+.modalTitle {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+}
+
+.modalSubtitle {
+  font-size: 16px;
+  color: #a6a6a6;
+}
+
+/* Медиа-запросы для мобильных устройств */
+@media (max-width: 600px) {
+  .container {
+    max-width: 95%; /* Увеличено для мобильных */
+    padding: 16px;
+  }
+
+  .card {
+    padding: 8px; /* Еще меньше отступов */
+  }
+
+  .name {
+    font-size: 24px;
+  }
+
+  .login {
+    font-size: 14px;
+  }
+
+  .avatar {
+    width: 80px !important;
+    height: 80px !important;
+  }
+
+  .sectionTitle {
+    font-size: 14px;
+  }
+
+  .socialIcon {
+    font-size: 24px;
+  }
+
+  .input {
+    font-size: 12px;
+    padding: 8px; /* Уменьшено для компактности */
+  }
+
+  .actionButton {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .modalTitle {
+    font-size: 20px;
+  }
+
+  .modalSubtitle {
+    font-size: 14px;
+  }
+}
+
+@media (min-width: 601px) {
+  .container {
+    max-width: 48em; /* Увеличено для десктопа */
+    padding: 24px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+}

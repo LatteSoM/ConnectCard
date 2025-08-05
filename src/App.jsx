@@ -20,6 +20,7 @@ import VkAuthScreen from './components/VkAuthScreen.jsx';
 import WelcomeScreen from './components/WelcomeScreen.jsx';
 import LoginScreen from './pages/LoginScreen/LoginScreen.jsx';
 import RegistrationScreen from './pages/RegisterScreen/RegisterScreen.jsx';
+import ProfileScreen from './pages/ProfilePage/ProfileScreen.jsx';
 
 const App = () => {
   return (
@@ -36,12 +37,12 @@ const App = () => {
           <Route path="/users/:userId" element={<User />} />
           <Route path="/profile" element={<CurrentUserProfile />} />
           <Route path="/stat" element={<StatScreen />} />
-          
+          {/* <Route path="/profile" element={<ProfileScreen />} /> */}
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        {/* <Route path="/login" element={<LoginPage />} /> */}
-        <Route path="/login" element={<LoginScreen />} />
+        <Route path="/login" element={<LoginPage />} />
+        {/* <Route path="/login" element={<LoginScreen />} /> */}
         <Route path="/registration" element={<Registration />} />
         {/* <Route path="/register" element={<RegistrationScreen />} /> */}
 

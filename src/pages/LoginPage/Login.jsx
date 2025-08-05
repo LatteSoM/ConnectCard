@@ -1,18 +1,11 @@
 import { useEffect, useState } from 'react';
-import {
-  UserOutlined,
-  KeyOutlined,
-  LinkedinOutlined,
-  GoogleOutlined,
-  LoadingOutlined,
-} from '@ant-design/icons';
+import { UserOutlined, KeyOutlined, LoadingOutlined } from '@ant-design/icons';
 import { Button, Input, Flex, Tooltip, Spin } from 'antd';
 import MyButton from '../../components/Button/Button.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import classes from './Login.module.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -28,7 +21,7 @@ const LoginPage = () => {
     if (!loading && userLogin) {
       navigate('/');
     }
-  }, [loading, userLogin]);
+  }, [loading, userLogin, navigate]);
 
   const handleChange = (field) => (e) => {
     if (field === 'username') {
@@ -71,8 +64,11 @@ const LoginPage = () => {
       await login(username, password);
       navigate('/');
     } catch (err) {
-      console.error(err);
-      setServerError('Неверный логин или пароль');
+      if (err.response && err.response.data && err.response.data.detail) {
+        setServerError(err.response.data.detail);
+      } else {
+        setServerError('Ошибка сети или неверный логин/пароль');
+      }
     } finally {
       setLoading(false);
     }
@@ -83,7 +79,7 @@ const LoginPage = () => {
       <Flex vertical justify="center" align="center" gap="large" className={classes.container}>
         <div className={classes.titleBlock}>
           <div className={classes.titleBlockLogo}>
-            <img src="src/assets/LogoNight.svg" alt="Logo" />
+            <img src="/src/assets/LogoNight.svg" alt="Logo" />
           </div>
           <div className={classes.titleBlockText}>
             <div className={classes.title}>
@@ -103,6 +99,7 @@ const LoginPage = () => {
                 onChange={handleChange('username')}
                 prefix={<UserOutlined />}
                 status={errors.username ? 'error' : ''}
+                maxLength={32}
               />
               {errors.username && (
                 <div style={{ color: 'red', fontSize: '0.9rem' }}>{errors.username}</div>
@@ -115,6 +112,7 @@ const LoginPage = () => {
                 onChange={handleChange('password')}
                 prefix={<KeyOutlined />}
                 status={errors.password ? 'error' : ''}
+                maxLength={255}
               />
               {errors.password && (
                 <div style={{ color: 'red', fontSize: '0.9rem' }}>{errors.password}</div>
@@ -125,6 +123,7 @@ const LoginPage = () => {
             {serverError && (
               <div style={{ color: 'red', marginBottom: '1rem' }}>{serverError}</div>
             )}
+            
 
             <MyButton variant="primary" type="submit" disabled={loading}>
               {loading ? (
@@ -148,22 +147,36 @@ const LoginPage = () => {
           </div>
           <div className={classes.socialOptionsContainer}>
             <Tooltip title="LinkedIn">
-              <FontAwesomeIcon icon={['fab', 'square-linkedin']} size='2x' />
-              {/* <Button size="large" shape="circle" icon={<GoogleOutlined />} /> */}
+              <Button
+                size="large"
+                shape="circle"
+                icon={<FontAwesomeIcon icon={['fab', 'square-linkedin']} />}
+                onClick={() => navigate('/auth/linkedin')}
+              />
             </Tooltip>
             <Tooltip title="Telegram">
-              <FontAwesomeIcon icon={['fab', 'telegram']} size='2x' />
-              {/* <Button size="large" shape="circle" icon={<LinkedinOutlined />} /> */}
+              <Button
+                size="large"
+                shape="circle"
+                icon={<FontAwesomeIcon icon={['fab', 'telegram']} />}
+                onClick={() => navigate('/auth/telegram')}
+              />
             </Tooltip>
             <Tooltip title="VK">
-              {/* <FontAwesomeIcon icon={['fab', 'vk']} size='2x'/> */}
-              <Button size="large" shape="square" icon={<FontAwesomeIcon icon={['fab', 'vk']} size='2x' />} />
+              <Button
+                size="large"
+                shape="square"
+                icon={<FontAwesomeIcon icon={['fab', 'vk']} />}
+                onClick={() => navigate('/auth/vk')}
+              />
             </Tooltip>
           </div>
         </div>
       </Flex>
-      <Flex vertical justify='center' align='center' gap='large'>
-        <Link to="/" className={classes.toHomeLink}>На главную</Link>
+      <Flex vertical justify="center" align="center" gap="large">
+        <Link to="/" className={classes.toHomeLink}>
+          На главную
+        </Link>
       </Flex>
     </div>
   );
