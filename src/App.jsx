@@ -15,6 +15,11 @@ import User from './pages/UserPage/UserProfile'
 import CurrentUserProfile from './pages/UserPage/CurrUserProfile.jsx';
 import NotFound from './pages/Statuses/NotFoundPage/NotFound.jsx';
 import StatScreen from './pages/StatScreen/StatScreen.jsx';
+import TelegramAuthScreen from './components/TelegramAuthScreen.jsx';
+import VkAuthScreen from './components/VkAuthScreen.jsx';
+import WelcomeScreen from './components/WelcomeScreen.jsx';
+import LoginScreen from './pages/LoginScreen/LoginScreen.jsx';
+import RegistrationScreen from './pages/RegisterScreen/RegisterScreen.jsx';
 
 const App = () => {
   return (
@@ -35,8 +40,10 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/registration" element={<Registration />} />
+        {/* <Route path="/login" element={<LoginPage />} /> */}
+        <Route path="/login" element={<LoginScreen />} />
+        {/* <Route path="/registration" element={<Registration />} /> */}
+        <Route path="/register" element={<RegistrationScreen />} />
 
 
       </Routes>

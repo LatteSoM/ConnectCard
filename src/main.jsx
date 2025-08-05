@@ -9,6 +9,7 @@ import { AuthProvider } from './context/AuthContext';
 import './utils/setupFontAwesome';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { SnackbarProvider } from 'notistack';
 
 const muiTheme = createTheme({
   palette: {
@@ -67,9 +68,11 @@ createRoot(document.getElementById('root')).render(
           },
         }}
       >
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        <SnackbarProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </SnackbarProvider>
       </ThemeProvider>
     </MuiThemeProvider>
   </StrictMode>,
