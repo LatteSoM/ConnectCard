@@ -1,7 +1,16 @@
+import 'dart:convert';
+
+import 'package:connect_card/models/user_model.dart';
+import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
+import 'package:http/http.dart' as http;
 
 class StatScreen extends StatefulWidget{
+  // final String cardId;
+  // const StatScreen({super.key, required this.cardId});
   const StatScreen({super.key});
 
   @override
@@ -9,60 +18,174 @@ class StatScreen extends StatefulWidget{
 }
 
 class _StatScreenState extends State<StatScreen>{
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.purpleAccent.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: const BackButton(color: Colors.purpleAccent,),
-              ),
-              const Center(
-                child: Text(
-                  'Аналитика',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 16),
-              _buildTopStats(),
-              const SizedBox(height: 16),
-              _buildPopularTransitions(),
-              const SizedBox(height: 16),
-              _buildDeviceUsage(),
-              const SizedBox(height: 16),
-              _buildWeeklyViews(),
-              const SizedBox(height: 16),
-              _buildTrafficSources(),
-              const SizedBox(height: 16),
-              _buildTopActions(),
-              const SizedBox(height: 16),
-              _buildVisitStat(),
-            ],
-          ),
-        ),
-      ),
-    );
+  final storage = FlutterSecureStorage();
+  final baseUrl = dotenv.env['BASE_URL'];
+  String? _token;
+  String? _id;
+  Map<String, String> get headers {
+    return {
+      'Authorization': 'Bearer $_token',
+      'Content-Type': 'application/json',
+    };
   }
+
+  StatCard statCard = StatCard.empty();
+  bool _isLoading = false;
+  bool _isAnalyticEmpty = true;
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _initializeData();
+  // }
+
+  Future<void> _initializeData() async {
+    await _loadCredentials();
+    await _loadAnalytics();
+  }
+
+  Future<void> _loadCredentials() async {
+    _id = await storage.read(key: 'id');
+    _token = await storage.read(key: 'token');
+  }
+
+  Future<void> _loadAnalytics() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/analytics'),
+      headers: headers,
+    );
+
+    if(response.statusCode == 200){
+      final jsonData = jsonDecode(utf8.decode(response.bodyBytes));
+      if(jsonData.isEmpty) {
+        setState(() {
+          _isLoading = false;
+          _isAnalyticEmpty = true;
+        });
+      }else {
+        setState(() {
+          statCard = StatCard.fromJson(jsonData);
+          _isLoading = false;
+        });
+      }
+    }else{
+      SnackbarHelper.showMessage(context, 'Извините, произошла ошибка', isSuccess: false);
+    }
+  }
+
+  IconData _getIconForService(String serviceName) {
+    switch (serviceName.toLowerCase()) {
+      case 'telegram':
+        return BoxIcons.bxl_telegram;
+      case 'linkedin':
+        return EvaIcons.linkedin;
+      case 'github':
+        return Bootstrap.github;
+      case 'twitter':
+        return BoxIcons.bxl_twitter;
+      case 'email':
+        return Icons.email;
+      case 'phone':
+        return Icons.phone;
+      case 'website':
+        return Icons.language;
+      default:
+        return Icons.link;
+    }
+  }
+
+  @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.black,
+    body: SafeArea(
+      child: Column(
+        children: [
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Аналитика',
+                style: TextStyle(
+                  fontSize: 24, 
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _isAnalyticEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Статистика отсутствует',
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        const Text(
+                          'Делитесь своей визиткой с другими,\nчтобы увидеть здесь статистику',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.4,
+                            color: Colors.white70,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        Icon(
+                          Icons.insights,
+                          size: 80,
+                          color: Colors.white.withOpacity(0.3),
+                        ),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 16),
+                        _buildTopStats(),
+                        const SizedBox(height: 16),
+                        _buildPopularTransitions(),
+                        const SizedBox(height: 16),
+                        _buildDeviceUsage(),
+                        const SizedBox(height: 16),
+                        _buildWeeklyViews(),
+                        const SizedBox(height: 16),
+                        _buildTrafficSources(),
+                        const SizedBox(height: 16),
+                        _buildTopActions(),
+                        const SizedBox(height: 16),
+                        _buildVisitStat(),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _buildTopStats() {
     return Card(
       color: const Color(0xFF1E1E1E),
       child: Row(
         children: [
-          _statColumn('Просмотры', '1112', '+112 с прошлой недели', Colors.green),
+          _statColumn('Просмотры', statCard.totalViews.toString(), '+112 с прошлой недели', Colors.green),
           _verticalDivider(),
-          _statColumn('Репосты', '511', '+53 с прошлой недели', Colors.green),
+          _statColumn('Репосты', statCard.totalShares.toString(), '+53 с прошлой недели', Colors.green),
           _verticalDivider(),
-          _statColumn('Конверсия', '2.8%', '-0.5%', Colors.red),
+          _statColumn('Конверсия', '${statCard.conversionRate}%', '-0.5%', Colors.red),
         ],
       ),
     );
@@ -114,30 +237,58 @@ class _StatScreenState extends State<StatScreen>{
   }
 
   Widget _buildPopularTransitions() {
+    final sortedLinks = statCard.popularLinks..sort((a, b) => b.clicks.compareTo(a.clicks));
+    final topLinks = sortedLinks.take(3).toList();
+
     return _sectionCard(
       title: 'Популярные переходы:',
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _iconStat(BoxIcons.bxl_telegram, '1112'),
-            _verticalDivider(),
-            _iconStat(EvaIcons.linkedin, '511'),
-            _verticalDivider(),
-            _iconStat(Bootstrap.github, '92'),
-          ],
-        ),
+        if (topLinks.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Text('Нет данных о переходах'),
+          )
+        else
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              for (final link in topLinks) ...[
+                _iconStat(_getIconForService(link.name), '${link.clicks}'),
+                if (link != topLinks.last) _verticalDivider(),
+              ],
+            ],
+          ),
       ],
     );
   }
 
   Widget _buildDeviceUsage() {
+    final totalViews = statCard.viewsByDevice.desktop + 
+                      statCard.viewsByDevice.mobile + 
+                      statCard.viewsByDevice.tablet;
+
+    double _calculatePercent(int value) {
+      return totalViews > 0 ? value / totalViews : 0;
+    }
+
     return _sectionCard(
       title: 'Устройства:',
-      children: const [
-        _progressItem('Мобильные', 1148, 1.0),
-        _progressItem('Десктоп', 548, 0.6),
-        _progressItem('Планшеты', 144, 0.2),
+      children: [
+        _progressItem(
+          'Мобильные', 
+          statCard.viewsByDevice.mobile,
+          _calculatePercent(statCard.viewsByDevice.mobile),
+        ),
+        _progressItem(
+          'Десктоп', 
+          statCard.viewsByDevice.desktop,
+          _calculatePercent(statCard.viewsByDevice.desktop),
+        ),
+        _progressItem(
+          'Планшеты', 
+          statCard.viewsByDevice.tablet,
+          _calculatePercent(statCard.viewsByDevice.tablet),
+        ),
       ],
     );
   }
@@ -163,12 +314,30 @@ class _StatScreenState extends State<StatScreen>{
   }
 
   Widget _buildTrafficSources() {
+    final trafficSources = [
+      _TrafficSource('Прямые переходы', statCard.topActions.view),
+      _TrafficSource('QR-коды', statCard.topActions.linkClick),
+      _TrafficSource('Поделились', statCard.topActions.share),
+      _TrafficSource('Добавили в контакты', statCard.topActions.addToContacts),
+    ];
+
+    // Сначала сортируем, потом берем топ-3
+    trafficSources.sort((a, b) => b.value.compareTo(a.value));
+    final topSources = trafficSources.take(3).toList();
+
+    final total = topSources.fold(0, (sum, source) => sum + source.value);
+
     return _sectionCard(
       title: 'Источники трафика:',
-      children: const [
-        _progressItem('Прямые переходы', 551, 0.5),
-        _progressItem('QR-коды', 782, 0.75),
-        _progressItem('Другое', 144, 0.2),
+      children: [
+        if (topSources.isEmpty)
+          const Text('Нет данных о трафике')
+        else
+          ...topSources.map((source) => _progressItem(
+                source.label,
+                source.value,
+                total > 0 ? source.value / total : 0,
+              )),
       ],
     );
   }
@@ -387,5 +556,11 @@ class _actionItem extends StatelessWidget {
       ),
     );
   }
+}
 
+class _TrafficSource {
+  final String label;
+  final int value;
+
+  _TrafficSource(this.label, this.value);
 }

@@ -12,7 +12,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:http/http.dart' as http;
 
 class ShareVisit extends StatefulWidget{
-  final int cardId;
+  final String cardId;
   const ShareVisit({super.key, required this.cardId});
 
   @override

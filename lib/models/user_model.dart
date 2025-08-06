@@ -1,5 +1,7 @@
+import 'package:intl/intl.dart';
+
 class User {
-  final int id;
+  final String id;
   final String? login;
   final String? avatar;
   final String name;
@@ -33,7 +35,7 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] ?? 0,
+      id: json['id'] ?? '',
       login: json['login'],
       avatar: json['avatar'],
       name: json['name'] ?? '',
@@ -81,7 +83,7 @@ class User {
   }
 
   User copyWith({
-    int? id,
+    String? id,
     String? login,
     String? avatar,
     String? name,
@@ -117,7 +119,7 @@ class User {
 
   factory User.empty() {
     return User(
-      id: 0,
+      id: '',
       login: null,
       avatar: null,
       name: '',
@@ -133,13 +135,13 @@ class User {
 }
 
 class BusinessCard {
-  final int id;
+  final String id;
   final String? avatar;
   final String fullname;
   final String? company;
   final String? position;
   final String? about;
-  final int? userId;
+  final String? userId;
   final List<ContactInfo> contactInfos;
   final List<LinkWidget> linkWidgets;
 
@@ -157,13 +159,13 @@ class BusinessCard {
 
   factory BusinessCard.fromJson(Map<String, dynamic> json) {
     return BusinessCard(
-      id: json['id'] as int? ?? 0,
+      id: json['id'] ?? '',
       avatar: json['avatar'] as String?,
       fullname: json['fullname'] as String? ?? 'No name',
       company: json['company'] as String?,
       position: json['position'] as String?,
       about: json['about'] as String?,
-      userId: json['user_id'] as int?,
+      userId: json['user_id'] as String?,
       contactInfos: (json['contact_infos'] as List<dynamic>?)
           ?.map((e) => ContactInfo.fromJson(e as Map<String, dynamic>))
           .toList() ?? [],
@@ -175,7 +177,7 @@ class BusinessCard {
 }
 
 class ContactInfo {
-  final int id;
+  final String id;
   final String? icon;
   final String name;
   final String? description;
@@ -189,7 +191,7 @@ class ContactInfo {
 
   factory ContactInfo.fromJson(Map<String, dynamic> json) {
     return ContactInfo(
-      id: json['id'] as int? ?? 0,
+      id: json['id'] ?? '',
       icon: json['icon'] as String?,
       name: json['name'] as String? ?? '',
       description: json['description'] as String?,
@@ -198,7 +200,7 @@ class ContactInfo {
 }
 
 class LinkWidget {
-  final int id;
+  final String id;
   final String link;
   final String? icon;
   final String? description;
@@ -214,11 +216,193 @@ class LinkWidget {
 
   factory LinkWidget.fromJson(Map<String, dynamic> json) {
     return LinkWidget(
-      id: json['id'] as int? ?? 0,
+      id: json['id'] ?? '',
       link: json['link'] as String? ?? '',
       icon: json['icon'] as String?,
       description: json['description'] as String?,
       name: json['name'] as String? ?? '',
+    );
+  }
+}
+
+class Event {
+  final String id;
+  final String date;
+  final String name;
+  final String place;
+  late final String formattedDate;
+
+  Event({
+    required this.id,
+    required this.date,
+    required this.name,
+    required this.place,
+  }) {
+    formattedDate = _formatDate(date);
+  }
+
+  factory Event.fromJson(Map<String, dynamic> json) {
+    return Event(
+      id: json['id'],
+      date: json['date'],
+      name: json['name'],
+      place: json['place'],
+    );
+  }
+
+  String _formatDate(String isoDate) {
+    try {
+      final dateTime = DateTime.parse(isoDate);
+      return DateFormat('dd MMMM yyyy').format(dateTime);
+    } catch (e) {
+      return isoDate;
+    }
+  }
+}
+
+class Contact {
+  final String id;
+  final String cardId;
+  final String userId;
+  final String? eventId;
+  final BusinessCard? card;
+  final User user;
+  final Event? event;
+
+  Contact({
+    required this.id,
+    required this.cardId,
+    required this.userId,
+    this.eventId,
+    this.card,
+    required this.user,
+    this.event,
+  });
+
+  factory Contact.fromJson(Map<String, dynamic> json) {
+    return Contact(
+      id: json['id'],
+      cardId: json['card_id'],
+      userId: json['user_id'],
+      eventId: json['event_id'],
+      card: json['card'] != null ? BusinessCard.fromJson(json['card']) : null,
+      user: User.fromJson(json['user']),
+      event: json['event'] != null ? Event.fromJson(json['event']) : null,
+    );
+  }
+}
+
+class StatCard{
+  final String cardId;
+  final int totalViews;
+  final int totalShares;
+  final int totalAddToContacts;
+  final double conversionRate;
+  final ViewsByDevice viewsByDevice;
+  final List<PopularLinks> popularLinks;
+  final TopActions topActions;
+
+  StatCard({
+    required this.cardId,
+    required this.totalViews,
+    required this.totalShares,
+    required this.totalAddToContacts,
+    required this.conversionRate,
+    required this.viewsByDevice,
+    required this.popularLinks,
+    required this.topActions,
+  });
+
+  factory StatCard.fromJson(Map<String, dynamic> json) {
+    return StatCard(
+      cardId: json['card_id'],
+      totalViews: json['total_views'],
+      totalShares: json['total_shares'],
+      totalAddToContacts: json['total_add_to_contacts'],
+      conversionRate: json['conversion_rate'],
+      viewsByDevice: ViewsByDevice.fromJson(json['views_by_device']),
+      popularLinks: (json['popular_links'] as List)
+      .map((item) => PopularLinks.fromJson(item))
+      .toList(),
+      topActions: TopActions.fromJson(json['top_actions']),
+    );
+  }
+
+  StatCard.empty()
+      : cardId = '',
+        totalViews = 0,
+        totalShares = 0,
+        totalAddToContacts = 0,
+        conversionRate = 0.0,
+        viewsByDevice = ViewsByDevice(desktop: 0, mobile: 0, tablet: 0),
+        popularLinks = [],
+        topActions = TopActions(
+          view: 0,
+          linkClick: 0,
+          share: 0,
+          addToContacts: 0,
+        );
+}
+
+class ViewsByDevice {
+  final int desktop;
+  final int mobile;
+  final int tablet;
+
+  ViewsByDevice({
+    required this.desktop,
+    required this.mobile,
+    required this.tablet,
+  });
+
+  factory ViewsByDevice.fromJson(Map<String, dynamic> json) {
+    return ViewsByDevice(
+      desktop: json['desktop'],
+      mobile: json['mobile'],
+      tablet: json['tablet']
+    );
+  }
+}
+
+class PopularLinks {
+  final String linkWidgetId;
+  final String name;
+  final int clicks;
+
+  PopularLinks({
+    required this.linkWidgetId,
+    required this.name,
+    required this.clicks,
+  });
+
+  factory PopularLinks.fromJson(Map<String, dynamic> json) {
+    return PopularLinks(
+      linkWidgetId: json['link_widget_id'],
+      name: json['name'],
+      clicks: json['clicks'],
+    );
+  }
+}
+
+class TopActions {
+  final int view;
+  final int linkClick;
+  final int share;
+  final int addToContacts;
+
+  TopActions({
+    required this.view,
+    required this.linkClick,
+    required this.share,
+    required this.addToContacts,
+  });
+
+  factory TopActions.fromJson(Map<String, dynamic> json) {
+    return TopActions(
+      view: json['view'],
+      linkClick: json['link_click'],
+      share: json['share'],
+      addToContacts: json['add_to_contacts'],
     );
   }
 }

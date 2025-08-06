@@ -21,7 +21,7 @@ class ListOfVisitCard extends StatefulWidget{
 class _ListOfVisitCardState extends State<ListOfVisitCard> {
   final storage = FlutterSecureStorage();
   final baseUrl = dotenv.env['BASE_URL'];
-  int? selectedCardId;
+  String? selectedCardId;
   String? _token;
   String? _id;
   Map<String, String> get headers {
@@ -63,16 +63,23 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
       });
     }else if(response.statusCode == 200){
       final jsonData = jsonDecode(utf8.decode(response.bodyBytes)) as List<dynamic>;
-      setState(() {
-        cards = jsonData.map((e) => BusinessCard.fromJson(e as Map<String, dynamic>)).toList();
-        isLoading = false;
-      });
+      if(jsonData.isEmpty){
+        setState(() {
+          isLoading = false;
+          isCardsEmpty = true;
+        });
+      }else{
+        setState(() {
+          cards = jsonData.map((e) => BusinessCard.fromJson(e as Map<String, dynamic>)).toList();
+          isLoading = false;
+        });
+      }
     }else{
       SnackbarHelper.showMessage(context, 'Извините, произошла ошибка', isSuccess: false);
     }
   }
 
-  Future<void> _deleteCard(int cardId) async {
+  Future<void> _deleteCard(String cardId) async {
     final response = await http.delete(
       Uri.parse('$baseUrl/cards/$cardId'),
       headers: headers,
@@ -85,7 +92,7 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
     }
   }
 
-  void _showCardContextMenu(BuildContext context, Offset position, int index) async {
+  void _showCardContextMenu(BuildContext context, Offset position, String index) async {
     setState(() {
       selectedCardId = index;
     });

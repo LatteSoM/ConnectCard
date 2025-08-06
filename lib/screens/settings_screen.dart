@@ -136,7 +136,7 @@ class _SettingsScreenState extends State<SettingsScreen>{
                   label: Text('ConnectCard FAQ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 )
               ),
-            ),                   
+            ),
           ],
         ),
       ),

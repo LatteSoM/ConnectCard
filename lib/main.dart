@@ -11,9 +11,15 @@ import 'package:connect_card/screens/visit_card_designer.dart';
 import 'package:connect_card/screens/visit_card_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
 
 Future main() async{
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+  //Если будем добавлять еще языки, то с настроек вытягивать надо будет
+  await initializeDateFormatting('ru_RU', null);
+  Intl.defaultLocale = 'ru_RU';
   runApp(const MainApp());
 }
 
