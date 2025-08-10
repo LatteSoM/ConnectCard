@@ -21,6 +21,7 @@ import WelcomeScreen from './components/WelcomeScreen.jsx';
 import LoginScreen from './pages/LoginScreen/LoginScreen.jsx';
 import RegistrationScreen from './pages/RegisterScreen/RegisterScreen.jsx';
 import ProfileScreen from './pages/ProfilePage/ProfileScreen.jsx';
+import SettingsScreen from './pages/SettingsScreen/SettingsScreen.jsx';
 
 const App = () => {
   return (
@@ -37,6 +38,7 @@ const App = () => {
           <Route path="/users/:userId" element={<User />} />
           <Route path="/profile" element={<CurrentUserProfile />} />
           <Route path="/stat" element={<StatScreen />} />
+          <Route path="/settings" element={<SettingsScreen />} />
           {/* <Route path="/profile" element={<ProfileScreen />} /> */}
           <Route path="*" element={<NotFound />} />
         </Route>

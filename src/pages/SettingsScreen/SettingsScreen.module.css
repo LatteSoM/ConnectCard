@@ -1,0 +1,164 @@
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100%;
+    width: 100%;
+    background-color: #141218;
+    padding: 16px;
+  }
+  
+  .container {
+    background: #121015;
+    width: 100%;
+    max-width: 95%; /* Максимальная ширина для мобильных */
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #1B1A20;
+  }
+  
+  .title {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    text-align: center;
+  }
+  
+  .divider {
+    background: white !important;
+    margin: 16px 20px !important;
+  }
+  
+  .settingRow {
+    width: 100%;
+  }
+  
+  .icon {
+    font-size: 32px;
+    color: white;
+  }
+  
+  .label {
+    font-size: 20px;
+    color: white;
+    flex: 1;
+  }
+  
+  .select {
+    width: 100%;
+    max-width: 200px;
+  }
+  
+  .select .ant-select-selector {
+    background: #1B1A20 !important;
+    border: 1px solid #2A272F !important;
+    border-radius: 12px !important;
+    color: #a6a6a6 !important;
+    font-size: 12px !important;
+    height: 40px !important;
+    display: flex;
+    align-items: center;
+  }
+  
+  .dropdown {
+    background: #1B1A20 !important;
+  }
+  
+  .dropdown .ant-select-item {
+    color: #a6a6a6 !important;
+    font-size: 12px !important;
+  }
+  
+  .switch {
+    background: #7C4DFF !important;
+  }
+  
+  .switch.ant-switch-checked {
+    background: #7C4DFF !important;
+  }
+  
+  .switch:not(.ant-switch-checked) {
+    background: #2A272F !important;
+  }
+  
+  .themeSelector {
+    background: #1B1A20;
+    border: 1px solid #2A272F;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 200px;
+    height: 40px;
+    display: flex;
+  }
+  
+  .themeButton {
+    flex: 1;
+    border: none !important;
+    background: transparent !important;
+    color: #a6a6a6 !important;
+    font-size: 10px !important;
+    height: 100% !important;
+  }
+  
+  .themeButton.ant-btn-primary {
+    background: #7C4DFF !important;
+    color: white !important;
+    font-weight: bold !important;
+  }
+  
+  .backButton {
+    background: rgba(125, 77, 255, 0.2) !important;
+    border: none !important;
+    color: #7C4DFF !important;
+  }
+  
+  .saveButton {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border: none !important;
+    color: white !important;
+  }
+  
+  .faqButton {
+    width: 100%;
+    border-radius: 12px !important;
+  }
+  
+  /* Медиа-запросы для мобильных устройств */
+  @media (max-width: 600px) {
+    .container {
+      max-width: 95%;
+      padding: 16px;
+    }
+  
+    .title {
+      font-size: 16px;
+    }
+  
+    .icon {
+      font-size: 24px;
+    }
+  
+    .label {
+      font-size: 16px;
+    }
+  
+    .select {
+      max-width: 150px;
+    }
+  
+    .themeSelector {
+      max-width: 150px;
+    }
+  
+    .themeButton {
+      font-size: 9px !important;
+    }
+  }
+  
+  @media (min-width: 601px) {
+    .container {
+      max-width: 48em; /* Просторный макет для десктопа */
+      padding: 24px;
+    }
+  }
