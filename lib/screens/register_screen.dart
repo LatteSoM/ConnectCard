@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:connect_card/main.dart';
+import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/authScreens/telegram_auth_screen.dart';
 import 'package:connect_card/screens/authScreens/vk_auth_screen.dart';
+import 'package:connect_card/screens/welcome_screen.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -54,7 +57,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (response.statusCode == 200) {
-        SnackbarHelper.showMessage(context, 'Пользователь успешно зарегистрирован');
+        SnackbarHelper.showMessage(context, 'Вы успешно зарегистрировались');
+        final jsonData = jsonDecode(response.body);
+        await _extractToken(jsonData['access_token'], jsonData['refresh_token']);
       } else {
         final erroData = jsonDecode(response.body);
         final error = erroData['detail'];
@@ -66,6 +71,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
     } catch (e) {
       SnackbarHelper.showMessage(context, 'Извините, произошла ошибка сети', isSuccess: false);
+    }
+  }
+
+  Future<void> _extractToken(String token, String refreshToken) async{
+    print('Pereshel');
+    final url = Uri.parse('$baseUrl/auth/current_user');
+    try{
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+        }
+      );
+      if(response.statusCode == 200){
+        final data = jsonDecode(response.body);
+        final user = User.fromJson(data);
+
+        await storage.write(key: 'token', value: token);
+        await storage.write(key: 'refresh_token', value: refreshToken);
+        await storage.write(key: 'id', value: user.id.toString());
+
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => WelcomeScreen(userName: user.name)));
+      }else{
+        SnackbarHelper.showMessage(context, 'Извините, произошла ошибка');
+      }
+    }catch (e){
+      print(e);
+      SnackbarHelper.showMessage(context, 'Произошла ошибка сети $e', isSuccess: false);
     }
   }
 

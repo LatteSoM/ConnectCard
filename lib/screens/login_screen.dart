@@ -25,7 +25,7 @@ class _LoginScreenState extends State<LoginScreen>{
   final TextEditingController _passwordController = TextEditingController();
 
 
-  Future<void> _extractToken(String token) async{
+  Future<void> _extractToken(String token, String refreshToken) async{
     final url = Uri.parse('$baseUrl/auth/current_user');
     try{
       final response = await http.get(
@@ -40,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen>{
         final user = User.fromJson(data);
 
         await storage.write(key: 'token', value: token);
+        await storage.write(key: 'refresh_token', value: refreshToken);
         await storage.write(key: 'id', value: user.id.toString());
 
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => WelcomeScreen(userName: user.name)));
@@ -53,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen>{
   }
 
   Future<void> _signIn() async{
-    if(_loginController.text.isEmpty || _passwordController.text.isEmpty){
+    if(_loginController.text.trim().isEmpty || _passwordController.text.trim().isEmpty){
       SnackbarHelper.showMessage(context, "Не все поля заполнены", isSuccess: false);
       return;
     }
@@ -72,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen>{
 
       if(response.statusCode == 200){
         final data = jsonDecode(response.body);
-        _extractToken(data['access_token']);
+        _extractToken(data['access_token'], data['refresh_token']);
       }else{
         SnackbarHelper.showMessage(context, 'Неверный логин или пароль', isSuccess: false);
       }

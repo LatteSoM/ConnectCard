@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/authScreens/telegram_auth_screen.dart';
 import 'package:connect_card/screens/authScreens/vk_auth_screen.dart';
+import 'package:connect_card/screens/login_screen.dart';
 import 'package:connect_card/screens/settings_screen.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget{
   const ProfileScreen({super.key});
@@ -166,6 +168,29 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
+  Future<void> _logOut() async {
+    final storage = FlutterSecureStorage();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final token = await storage.read(key: "token");
+    try{
+      final response = await http.post(
+        Uri.parse('$baseUrl/auth/logout'),
+        headers: {
+            'Authorization': 'Bearer $token',
+          }
+      );
+      if(response.statusCode == 200){
+        await storage.deleteAll();
+        await prefs.remove('tutorial_shown');
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+      }else{
+        SnackbarHelper.showMessage(context, 'Извините, произошла ошибка', isSuccess: false);
+      }
+    }catch (e) {
+      print(e);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -261,7 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             text: 'Выйти из аккаунта',
                             backgroundColor: const Color(0xFF952424),
                             onPressed: () {
-                              SnackbarHelper.showMessage(context, 'Logout ёпта');
+                              _logOut();
                             },
                             withBottomMargin: false,
                           ),
