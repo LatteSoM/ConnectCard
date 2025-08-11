@@ -8,7 +8,7 @@
  */
 
 
- .container {
+ /* .container {
     max-width: 800px;
     margin: 0 auto;
     padding: 2rem;
@@ -17,7 +17,7 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     border-radius: 12px;
     box-shadow: 0 0 12px rgba(127, 76, 255, 0.2);
-}
+} */
 /* 
 .heading {
     font-size: 2rem;
@@ -72,3 +72,233 @@
     border-radius: 10px;
     box-shadow: 0 0 8px rgba(127, 76, 255, 0.3);
 } */
+/* 
+.wrapper {
+    background-color: #121015;
+    color: #fff;
+    min-height: 100vh;
+    padding: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+
+  }
+  
+  .hero {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  
+  .titleBlock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  
+  .titleBlockLogo img {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .title {
+    font-size: clamp(24px, 3vw, 36px);
+    font-weight: bold;
+  }
+  
+  .title span {
+    color: #9C27B0; 
+  }
+  
+  .subtitle {
+    font-size: clamp(14px, 1.5vw, 16px);
+    opacity: 0.9;
+  }
+  
+  .card {
+    background-color: #1E1E1E;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-4px);
+  }
+  
+  .list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+  }
+  
+  .list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: clamp(14px, 1.5vw, 16px);
+  }
+  
+  .icon {
+    margin-right: 8px;
+    color: #fff;
+  }
+  
+  @media (max-width: 600px) {
+    .wrapper {
+      padding: 16px;
+    }
+  
+    .hero {
+      margin-bottom: 32px;
+    }
+  
+    .card {
+      padding: 16px;
+    }
+  
+    .list li {
+      font-size: 14px;
+    }
+  
+    .titleBlock {
+      flex-direction: column;
+      text-align: center;
+    }
+  
+    .titleBlockLogo img {
+      width: 40px;
+      height: 40px;
+    }
+  } */
+
+
+  .wrapper {
+    background: linear-gradient(180deg, #121015 0%, #1E1E1E 100%);
+    color: #fff;
+    min-height: 100vh;
+    padding: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  
+  .hero {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  
+  .titleBlock {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  
+  .titleBlockLogo img {
+    width: 56px;
+    height: 56px;
+    filter: drop-shadow(0 0 8px rgba(156, 39, 176, 0.3));
+  }
+  
+  .title {
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  
+  .title span {
+    color: #794bf7;
+  }
+  
+  .subtitle {
+    font-size: clamp(14px, 1.5vw, 16px);
+    opacity: 0.8;
+    font-weight: 400;
+  }
+  
+  .card {
+    background-color: #1E1E1E;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    max-width: 100%;
+  }
+  
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 8px 32px rgba(156, 39, 176, 0.2);
+  }
+  
+  .list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0;
+  }
+  
+  .list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    font-size: clamp(14px, 1.5vw, 16px);
+    font-weight: 400;
+  }
+  
+  .icon {
+    margin-right: 12px;
+    color: #fff;
+    font-size: 20px;
+    transition: transform 0.3s ease;
+  }
+  
+  .list li:hover .icon {
+    transform: scale(1.2);
+  }
+
+  .link{
+    text-decoration: none;
+    color: white !important;
+  }
+  
+  .ctaContainer {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+  }
+  
+  @media (max-width: 600px) {
+    .wrapper {
+      padding: 16px;
+    }
+  
+    .hero {
+      margin-bottom: 32px;
+    }
+  
+    .card {
+      padding: 16px;
+    }
+  
+    .list li {
+      font-size: 14px;
+    }
+  
+    .titleBlock {
+      flex-direction: column;
+      text-align: center;
+    }
+  
+    .titleBlockLogo img {
+      width: 48px;
+      height: 48px;
+    }
+  
+    .ctaContainer {
+      flex-direction: row;
+      /* gap: 12px; */
+    }
+  }
