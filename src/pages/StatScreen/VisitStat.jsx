@@ -1,8 +1,9 @@
 import { Card, Box } from '@mui/material';
 import styled from 'styled-components';
 import VisitItem from './VisitItem';
+import { motion } from 'framer-motion';
 
-const StyledCard = styled(Card)`
+const StyledCard = styled(motion(Card))`
   background-color: #1e1e1e;
   padding: 16px;
 `;

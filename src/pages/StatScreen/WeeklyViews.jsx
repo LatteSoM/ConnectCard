@@ -1,13 +1,23 @@
+
 import { Card, Typography, Box } from '@mui/material';
 import styled from 'styled-components';
 import BarStat from './BarStat';
+import { motion, useInView } from 'framer-motion';
+import { useRef } from 'react';
 
-const StyledCard = styled(Card)`
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const StyledCard = styled(motion(Card))`
   background-color: #1e1e1e;
   padding: 16px;
 `;
 
-const Row = styled(Box)`
+const Row = styled(motion(Box))`
   display: flex;
   justify-content: space-evenly;
 
@@ -18,13 +28,25 @@ const Row = styled(Box)`
 `;
 
 const WeeklyViews = () => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, threshold: 0.1 });
+
   return (
-    <StyledCard>
+    <StyledCard
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+    >
       <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16 }}>
         Просмотры за неделю:
       </Typography>
       <Box sx={{ height: 12 }} />
-      <Row>
+      <Row
+        variants={containerVariants}
+        initial="hidden"
+        animate={isInView ? "visible" : "hidden"}
+      >
         <BarStat label="пн" heightFactor={0.6} />
         <BarStat label="вт" heightFactor={1.0} />
         <BarStat label="ср" heightFactor={0.5} />

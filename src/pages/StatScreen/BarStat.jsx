@@ -1,9 +1,10 @@
 import { Typography, Box } from '@mui/material';
 import styled from 'styled-components';
+import { motion, useInView } from 'framer-motion';
+import { useRef } from 'react';
 
-const Bar = styled(Box)`
+const Bar = styled(motion.div)`
   width: 20px;
-  height: ${props => props.height * 100}px;
   background-color: #fff;
   border-radius: 4px;
 `;
@@ -15,10 +16,17 @@ const Container = styled(Box)`
 `;
 
 const BarStat = ({ label, heightFactor }) => {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, threshold: 0.1 });
+
   return (
-    <Container>
+    <Container ref={ref}>
       <Box sx={{ height: 100, display: 'flex', alignItems: 'flex-end' }}>
-        <Bar height={heightFactor} />
+        <Bar
+          initial={{ height: 0 }}
+          animate={isInView ? { height: heightFactor * 100 } : { height: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
+        />
       </Box>
       <Box sx={{ height: 8 }} />
       <Typography variant="caption" sx={{ width: 24, textAlign: 'center', fontSize: 12 }}>

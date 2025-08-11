@@ -1,3 +1,4 @@
+
 import { IconButton, Typography, Box } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import styled from 'styled-components';
@@ -35,7 +36,7 @@ const BackButtonContainer = styled(Box)`
 const StatScreen = () => {
   return (
     <Container>
-        {/* <Box sx={{ backgroundColor: '#000', color: '#fff', padding: '16px' }}>
+      {/* <Box sx={{ backgroundColor: '#000', color: '#fff', padding: '16px' }}>
             <Typography variant="h5">Тестовый текст</Typography>
         </Box> */}
       {/* <BackButtonContainer>
