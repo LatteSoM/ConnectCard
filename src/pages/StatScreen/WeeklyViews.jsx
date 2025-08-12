@@ -1,4 +1,3 @@
-
 import { Card, Typography, Box } from '@mui/material';
 import styled from 'styled-components';
 import BarStat from './BarStat';
