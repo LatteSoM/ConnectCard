@@ -6,7 +6,7 @@ from uuid import UUID
 
 from ..auth.auth import get_current_user
 from ..database import get_session
-from ..models.models import Card, ContactInfo, LinkWidget, Analytics, User
+from ..models.models import Card, ContactInfo, LinkWidget, Analytics, User, EditableElement
 from pydantic import BaseModel
 from user_agents import parse
 
@@ -14,6 +14,27 @@ router = APIRouter(
     prefix="/cards",
     tags=["cards"]
 )
+
+class EditableElementBase(BaseModel):
+    type: str
+    matrix: str
+    rotation_angle: float = 0.0
+    scale_factor: float = 1.0
+    width: float
+    height: float
+    color: str
+    text: Optional[str] = None
+    font_size: Optional[float] = None
+    base_font_size: Optional[float] = None
+    font_family: Optional[str] = None
+    font_weight: Optional[str] = None
+    text_color: Optional[str] = None
+    shape_type: Optional[str] = None
+    image_url: Optional[str] = None
+    image_opacity: float = 1.0
+
+class EditableElementResponse(EditableElementBase):
+    id: UUID
 
 class CardBase(BaseModel):
     avatar: str | None = None
@@ -64,6 +85,10 @@ def create_card(card: CardCreate, current_user: User = Depends(get_current_user)
     if card.link_widget_ids:
         link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
         db_card.link_widgets.extend(link_widgets)
+        
+    for elem_data in card.elements:
+        db_element = EditableElement(**elem_data.model_dump(), card_id=db_card.id)
+        session.add(db_element)
 
     session.commit()
     session.refresh(db_card)
@@ -124,6 +149,12 @@ def update_card(card_id: UUID, card: CardCreate, session: Session = Depends(get_
     if card.link_widget_ids:
         link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
         db_card.link_widgets = link_widgets
+        
+    for elem in db_card.elements:
+        session.delete(elem)
+    for elem_data in card.elements:
+        db_element = EditableElement(**elem_data.model_dump(), card_id=db_card.id)
+        session.add(db_element)
 
     session.commit()
     session.refresh(db_card)

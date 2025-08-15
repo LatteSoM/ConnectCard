@@ -54,6 +54,28 @@ class Analytics(SQLModel, table=True):
     card: Optional["Card"] = Relationship(back_populates="analytics")
     link_widget: Optional["LinkWidget"] = Relationship(back_populates=None)  # Связь с LinkWidget
 
+#Таблица элементов карточки
+class EditableElement(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    type: str  # допустим что-то типа, 'text', 'shape', 'image'
+    matrix: str  # JSON представление of Matrix4
+    rotation_angle: float = 0.0
+    scale_factor: float = 1.0
+    width: float
+    height: float
+    color: str  # hex цвет, например, '#FFFFFF'
+    text: Optional[str] = None
+    font_size: Optional[float] = None
+    base_font_size: Optional[float] = None
+    font_family: Optional[str] = None
+    font_weight: Optional[str] = None  # типа, 'bold', 'normal'
+    text_color: Optional[str] = None  # hex цвет текста 
+    shape_type: Optional[str] = None  # типа, 'rectangle', 'circle'
+    image_url: Optional[str] = None  # URL пикчи
+    image_opacity: float = 1.0
+    card_id: Optional[UUID] = Field(default=None, foreign_key="card.id")
+    card: Optional["Card"] = Relationship(back_populates="elements")
+    
 # Таблица для карточки
 class Card(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -68,6 +90,7 @@ class Card(SQLModel, table=True):
     link_widgets: List["LinkWidget"] = Relationship(back_populates="cards", link_model=CardLinkWidget)
     contacts: List["Contact"] = Relationship(back_populates="card")
     analytics: List["Analytics"] = Relationship(back_populates="card")
+    elements: List["EditableElement"] = Relationship(back_populates="card")
 
 # Таблица для пользователя
 class User(SQLModel, table=True):
