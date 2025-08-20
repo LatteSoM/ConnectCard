@@ -36,6 +36,10 @@ class EditableElementBase(BaseModel):
 class EditableElementResponse(EditableElementBase):
     id: UUID
 
+class EditableElementCreate(EditableElementBase):
+    pass
+
+
 class CardBase(BaseModel):
     avatar: str | None = None
     fullname: str
@@ -46,11 +50,13 @@ class CardBase(BaseModel):
 class CardCreate(CardBase):
     contact_info_ids: List[UUID] = []
     link_widget_ids: List[UUID] = []
+    elements: List[EditableElementCreate] = []
 
 class CardResponse(CardBase):
     id: UUID
     contact_infos: List[ContactInfo]
     link_widgets: List[LinkWidget]
+    elements: List[EditableElementCreate] = []
 
     class Config:
         from_attributes = True
