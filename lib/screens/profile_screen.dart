@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/authScreens/telegram_auth_screen.dart';
 import 'package:connect_card/screens/authScreens/vk_auth_screen.dart';
@@ -10,6 +11,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget{
@@ -43,6 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String name = "";
+  String? avatar = "";
   bool _isChangingPassword = false;
   TextEditingController _newPasswordController = TextEditingController();
   TextEditingController _confirmPasswordController = TextEditingController();
@@ -133,6 +137,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       _phoneController.text = _initialPhone ?? "Не указан";
       _passwordController.text = user.hasPassword ? "**************" : "Пароль для аккаунта не установлен";
       name = user.name;
+      avatar = user.avatar;
     });
   }
 
@@ -233,9 +238,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      CircleAvatar(
-                        radius: 55,
-                      ),
+                      // CircleAvatar(
+                      //   radius: 55,
+                      // ),
+                      _buildAvatar(),
                       SizedBox(height: 10,),
 
                       Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28, color: Color(0xFF7C4DFF)),),
@@ -369,6 +375,28 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           ),
         ],
       ),
+    );
+  }
+
+    Widget _buildAvatar() {
+    if (avatar == null || avatar!.isEmpty) {
+      return CircleAvatar(
+        radius: 55,
+        backgroundColor: Colors.grey[300],
+        child: Icon(
+          Icons.person,
+          size: 55,
+          color: Colors.white,
+        ),
+      );
+    }
+
+    return CircleAvatar(
+      radius: 55,
+      backgroundImage: NetworkImage('$baseUrl/avatars/${avatar!}'),
+      onBackgroundImageError: (exception, stackTrace) {
+        //error
+      },
     );
   }
 

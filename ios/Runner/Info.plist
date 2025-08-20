@@ -5,7 +5,12 @@
 
 	<key>NSCameraUsageDescription</key>
 	<string>Это приложение использует камеру для сканирования QR-кодов</string>
-
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Для выбора фото из галереи</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Для съемки фото</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Для записи видео</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

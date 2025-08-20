@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/login_screen.dart';
+import 'package:connect_card/screens/visit_card_designer.dart';
 import 'package:connect_card/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -102,6 +103,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: user != null ? WelcomeScreen(userName: user!.name) : LoginScreen(),
+      // home: VisitCardDesigner(),
       theme: ThemeData.dark(),
     );
   }

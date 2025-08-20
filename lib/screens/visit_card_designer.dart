@@ -1,5 +1,14 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:connect_card/third_party/matrix_gesture_detector.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 
 class VisitCardDesigner extends StatefulWidget {
   const VisitCardDesigner({super.key});
@@ -8,36 +17,50 @@ class VisitCardDesigner extends StatefulWidget {
   State<VisitCardDesigner> createState() => _VisitCardDesignerState();
 }
 
+enum ElementType { text, shape, image, background }
+enum ShapeType { square, circle, triangle }
+const Map<ShapeType, String> shapeLabels = {
+  ShapeType.square: "Квадрат",
+  ShapeType.circle: "Круг",
+  ShapeType.triangle: "Треугольник",
+};
 class _VisitCardDesignerState extends State<VisitCardDesigner> {
-  final List<EditableTextItem> textItems = [
-    EditableTextItem(
-      text: 'Барак Обама', 
-      matrix: Matrix4.identity(),
-      fontSize: 18,
-      textColor: Colors.white,
-      fontFamily: 'Roboto',
-      fontWeight: FontWeight.normal,
-    ),
-    EditableTextItem(
-      text: 'Старший кассир', 
-      matrix: Matrix4.identity(),
-      fontSize: 18,
-      textColor: Colors.white,
-      fontFamily: 'Roboto',
-      fontWeight: FontWeight.normal,
-    ),
-    EditableTextItem(
-      text: 'ООО KFC', 
-      matrix: Matrix4.identity(),
-      fontSize: 18,
-      textColor: Colors.white,
-      fontFamily: 'Roboto',
-      fontWeight: FontWeight.normal,
-    ),
-  ];
+  
+  final TextEditingController _controller1 = TextEditingController();
+  final baseUrl = dotenv.env['BASE_URL'];
+  final storage = FlutterSecureStorage();
 
+  List<EditableElement> elements = [
+      EditableElement(
+    type: ElementType.shape,
+    matrix: Matrix4.identity()..translate(-118.66667175292969, -33.66667175292969),
+    shapeType: ShapeType.circle,
+    color: Colors.red,
+    width: 100,
+    height: 100,
+  ),
+  EditableElement(
+    type: ElementType.text,
+    matrix: Matrix4.identity()..translate(-19.0, -51.0),
+    text: "Name",
+    fontSize: 18,
+    baseFontSize: 18,
+    textColor: Colors.white,
+  ),
+  EditableElement(
+    type: ElementType.text,
+    matrix: Matrix4.identity()..translate(-18.333328247070312, 3.6666717529296875),
+    text: "Info",
+    fontSize: 18,
+    baseFontSize: 18,
+    textColor: Colors.white,
+  ),
+];
+
+
+  bool lockAspectRatio = false;
   int? selectedIndex;
-  String selectedElementType = 'text';
+  ElementType? selectedElementType;
   double fontSize = 18;
   double rotationAngle = 0;
   double width = 100;
@@ -45,8 +68,164 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
   Color textColor = Colors.white;
   String fontFamily = 'Roboto';
   FontWeight fontWeight = FontWeight.normal;
-  String shapeType = 'rectangle';
+  ShapeType shapeType = ShapeType.square;
   Color shapeColor = Colors.blue;
+
+  Future<void> _saveCard() async {
+    final token = await storage.read(key: 'token');
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+    };
+
+    final body = {
+      "fullname": "AlexTest",
+      "elements": elements.map((e) => e.toJson()).toList(),
+    };
+
+    for(var item in elements) {
+      print(item.color);
+    }
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/cards/'),
+      headers: headers,
+      body: jsonEncode(body),
+    );
+
+    if(response.statusCode == 200) {
+      SnackbarHelper.showMessage(context, 'Успешно');
+    } else {
+      SnackbarHelper.showMessage(context, 'Ошибка', isSuccess: false);
+    }
+  }
+
+  String _getCreateButtonText() {
+    switch (selectedElementType) {
+      case ElementType.text:
+        return 'Добавить текст';
+      case ElementType.shape:
+        return 'Добавить фигуру';
+      case ElementType.image:
+        return 'Добавить изображение';
+      case ElementType.background:
+        return 'Изменить задний фон';
+      default:
+        return 'Выберите элемент';
+    }
+  }
+
+  void _handleCreateButtonPress() {
+    switch (selectedElementType) {
+      case ElementType.text:
+        setState(() {
+          elements.add(
+            EditableElement(
+              type: ElementType.text,
+              matrix: Matrix4.identity(),
+              text: "Example",
+              fontSize: 18,
+              baseFontSize: 18,
+              textColor: Colors.white,
+            ),
+          );
+        });
+        break;
+      case ElementType.shape:
+        print('Добавляем фигуру');
+        setState(() {
+          elements.add(
+            EditableElement(
+              type: ElementType.shape,
+              matrix: Matrix4.identity(),
+              shapeType: ShapeType.circle,
+              color: Colors.red,
+              width: 100,
+              height: 100,
+            ),
+          );
+        });
+        break;
+      case ElementType.image:
+  print('Добавляем изображение');
+  _pickImage().then((selectedImage) {
+    if (selectedImage != null) {
+      setState(() {
+        elements.add(
+          EditableElement(
+            type: ElementType.image,
+            matrix: Matrix4.identity(),
+            imageProvider: FileImage(selectedImage),
+          ),
+        );
+      });
+    } else {
+      print("Изображение не выбрано");
+    }
+  });
+  break;
+
+      default:
+        print('Элемент не выбран');
+    }
+  }
+
+  Future<File?> _pickImage() async {
+    // if(await Permission.photos.request().isGranted) {
+    //   final picker = ImagePicker();
+    //   final pickedFile = await picker.pickImage(
+    //     source: ImageSource.gallery,
+    //   );
+
+    //   if(pickedFile != null) {
+    //     setState(() {
+    //       _selectedImage = File(pickedFile.path);
+    //     });
+    //   }
+    // }else {
+    //   SnackbarHelper.showMessage(context, 'Необходимо разрешение для доступа к галерее', isSuccess: false);
+    // }
+    final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+      );
+
+      if(pickedFile != null) {
+        return File(pickedFile.path);
+      }
+    return null;
+  }
+
+  void _removeElement() {
+    if(selectedIndex != null) {
+      setState(() {
+        elements.removeAt(selectedIndex!);
+        selectedIndex = null;
+      });
+    }
+  }
+
+  void _moveLayerUp() {
+    if(selectedIndex != null && selectedIndex! < elements.length - 1) {
+      setState(() {
+        final temp = elements[selectedIndex! + 1];
+        elements[selectedIndex! + 1] = elements[selectedIndex!];
+        elements[selectedIndex!] = temp;
+        selectedIndex = selectedIndex!+1;
+      });
+    }
+  }
+
+  void _moveLayerDown() {
+    if(selectedIndex != null && selectedIndex! > 0) {
+      setState(() {
+        final temp = elements[selectedIndex! - 1];
+        elements[selectedIndex! - 1] = elements[selectedIndex!];
+        elements[selectedIndex!] = temp;
+        selectedIndex = selectedIndex!-1;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +251,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.check, color: Colors.white),
-                            onPressed: () => _saveDesign(),
+                            onPressed: () => _saveCard(),
                           ),
                         ],
                       ),
@@ -92,42 +271,89 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
             ),
           ),
 
-          // Кнопки (Выбор текстового поля)
+          // Кнопки (Выбор элементов)
           SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.zero,
-            child: Row(
-              children: List.generate(textItems.length, (index) {
-                return GestureDetector(
-                  onTap: () => _selectTextItem(index),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: selectedIndex == index 
-                          ? Colors.purple.withOpacity(0.3)
-                          : const Color(0xFF141218),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: selectedIndex == index 
-                            ? Colors.purpleAccent 
-                            : Colors.grey[700]!,
-                        width: selectedIndex == index ? 2 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      textItems[index].text,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: selectedIndex == index ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                  ),
-                );
-              }),
+  scrollDirection: Axis.horizontal,
+  padding: EdgeInsets.zero,
+  child: Row(
+    children: List.generate(elements.length, (index) {
+      final item = elements[index];
+
+      // Заголовок
+      String label;
+      IconData icon;
+      if (item.type == ElementType.text) {
+        label = item.text ?? "Текст";
+        icon = Icons.text_fields;
+      } else if (item.type == ElementType.shape) {
+        label = shapeLabels[item.shapeType] ?? item.shapeType.toString();
+        switch (item.shapeType) {
+          case ShapeType.circle:
+            icon = Icons.circle;
+            break;
+          case ShapeType.square:
+            icon = Icons.crop_square;
+            break;
+          case ShapeType.triangle:
+            icon = Icons.change_history;
+            break;
+          default:
+            icon = Icons.crop_square;
+        }
+      } else if (item.type == ElementType.image) {
+        label = 'Изображение';
+        icon = Icons.photo;
+      } else {
+        label = "Элемент";
+        icon = Icons.extension;
+      }
+
+      return GestureDetector(
+        onTap: () {
+          setState(() {
+            selectedIndex = index;
+            selectedElementType = elements[index].type;
+            if(elements[index].type == ElementType.text) {
+              _controller1.text = elements[index].text ?? '';
+            }
+          });
+        },
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: selectedIndex == index 
+                ? Colors.purple.withOpacity(0.3)
+                : const Color(0xFF141218),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selectedIndex == index 
+                  ? Colors.purpleAccent 
+                  : Colors.grey[700]!,
+              width: selectedIndex == index ? 2 : 1,
             ),
           ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 18),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: selectedIndex == index 
+                      ? FontWeight.bold 
+                      : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }),
+  ),
+),
 
           const SizedBox(height: 20),
 
@@ -170,72 +396,32 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                         ),
                       ),
                     ),
-                    //Лист с элементами (пока тут только TextField)
-                    ...List.generate(textItems.length, (index) {
-                      final item = textItems[index];
-                      //Та самая штука, которая позволяет нам перемещать, масштабировать и осуществлять ротацию объектов
-                      return MatrixGestureDetector(
-                        shouldTranslate: true,
-                        shouldScale: true,
-                        shouldRotate: true,
-                        onMatrixUpdate: (newMatrix, _, __, ___) {
-                          setState(() {
-                            item.matrix = newMatrix;
-                          });
-                        },
-                        onScaleStart: () {
-                          setState(() {
-                            selectedIndex = index;
-                            selectedElementType = 'text';
-                          });
-                        },
-                        onScaleEnd: () {},
-                        child: OverflowBox(
-                          minWidth: 0,
-                          minHeight: 0,
-                          maxWidth: double.infinity,
-                          maxHeight: double.infinity,
-                          child: Transform(
-                            //Нужно для ротации (можно 3,14 вывести как константу, ну особо не важно)
-                            transform: Matrix4.rotationZ(
-                              textItems[index].rotationAngle * (3.14 / 180)
-                            )..multiply(item.matrix),
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedIndex = index;
-                                  selectedElementType = 'text';
-                                });
-                              },
-                              //Обрамление вокруг выделенного элемента
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  border: selectedIndex == index && selectedElementType == 'text'
-                                      ? Border.all(color: Colors.yellow, width: 2)
-                                      : null,
-                                ),
-                                //Текст, с которым мы работает
-                                child: Text(
-                                  item.text,
-                                  style: TextStyle(
-                                    color: item.textColor,
-                                    fontSize: item.fontSize,
-                                    fontWeight: item.fontWeight,
-                                    fontFamily: item.fontFamily,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
+                    ...List.generate(elements.length, (i) => buildEditableElement(elements[i], i)),
                   ],
                 ),
               )
             ),
           ),
+          if(selectedIndex != null)
+            Container(
+              alignment: Alignment.centerRight,
+              padding: EdgeInsets.only(right: 16),
+              child: ElevatedButton(
+                onPressed: () {
+                  _removeElement();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[800],
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size(45, 45),
+                  fixedSize: Size(45, 45),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text('-', style: TextStyle(fontSize: 24, color: Colors.white)),
+              ),
+            ),
 
           //Блок настроек
           Expanded(
@@ -249,37 +435,54 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          if (selectedIndex != null && selectedElementType == 'text') ...[
-                            // Настройки для текста
-                            _buildTextFieldWithFontWeight(),
-                            _buildFontFamilyWithColorPicker(),
-                            _buildFontSizeSlider(),
-                            _buildRotationSlider(),
-                          ] else if (selectedElementType == 'shape') ...[
-                            // Настройки для фигур
-                            _buildCustomSlider('Высота', height, 20, 200, (value) {
-                              setState(() => height = value);
-                            }),
-                            _buildCustomSlider('Ширина', width, 20, 200, (value) {
-                              setState(() => width = value);
-                            }),
-                            _buildShapeDropdownWithColorPicker(),
-                            _buildCustomSlider('Размер', fontSize, 8, 36, (value) {
-                              setState(() => fontSize = value);
-                            }),
-                            _buildCustomSlider('Поворот', rotationAngle, 0, 360, (value) {
-                              setState(() => rotationAngle = value);
-                            }),
-                          ],
-                        ],
+                  child: selectedIndex != null
+                    ? SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              if (selectedIndex != null && selectedElementType == ElementType.text) ...[
+                                // Настройки для текста
+                                _buildLayerButtons(),
+                                _buildTextFieldWithFontWeight(),
+                                _buildFontFamilyWithColorPicker(),
+                                _buildFontSizeSlider(),
+                                _buildRotationSlider(),
+                              ] else if (selectedIndex != null && selectedElementType == ElementType.shape) ...[
+                                _buildLayerButtons(),
+                                _buildShapeHeightSlider(),
+                                _buildLockButton(),
+                                _buildShapeWidthSlider(),
+                                _buildShapeDropdownWithColorPicker(),
+                                _buildRotationSlider(),
+                              ] else if (selectedIndex != null && selectedElementType == ElementType.image) ...[
+                                _buildLayerButtons(),
+                                _buildShapeHeightSlider(),
+                                _buildLockButton(),
+                                _buildShapeWidthSlider(),
+                                _buildOpacitySlider(),
+                                _buildRotationSlider(),
+                              ],
+                            ],
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: TextButton(
+                          onPressed: () => _handleCreateButtonPress(),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            backgroundColor: Colors.grey[900],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            _getCreateButtonText(),
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                 ),
               ),
             ),
@@ -300,10 +503,10 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildBottomBarItem(Icons.text_fields, 'Текст', 'text'),
-                    _buildBottomBarItem(Icons.crop_square, 'Фигура', 'shape'),
-                    _buildBottomBarItem(Icons.image, 'Изображение', 'image'),
-                    _buildBottomBarItem(Icons.format_paint, 'Фон', 'background'),
+                    _buildBottomBarItem(Icons.text_fields, 'Текст', ElementType.text),
+                    _buildBottomBarItem(Icons.crop_square, 'Фигура', ElementType.shape),
+                    _buildBottomBarItem(Icons.image, 'Изображение', ElementType.image),
+                    _buildBottomBarItem(Icons.format_paint, 'Фон', ElementType.background),
                   ],
                 ),
               ),
@@ -314,7 +517,156 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
     );
   }
 
-  Widget _buildBottomBarItem(IconData icon, String label, String type) {
+
+  Widget buildEditableElement(EditableElement item, int index) {
+  return MatrixGestureDetector(
+    shouldTranslate: true,
+    shouldScale: true,
+    shouldRotate: true,
+    onMatrixUpdate: (newMatrix, _, __, ___) {
+      setState(() {
+        item.matrix = newMatrix;
+
+        // Масштаб
+        final scaleX = sqrt(pow(newMatrix.storage[0], 2) + pow(newMatrix.storage[1], 2));
+        item.scaleFactor = scaleX;
+
+        if (item.type == ElementType.text) {
+          item.fontSize = (item.baseFontSize ?? 18) * item.scaleFactor;
+        } else {
+          item.width = (item.baseWidth ?? 100) * item.scaleFactor;
+          item.height = (item.baseHeight ?? 100) * item.scaleFactor;
+        }
+      });
+    },
+    onScaleStart: () {
+      setState(() {
+        selectedIndex = index;
+        selectedElementType = item.type;
+      });
+    },
+    onScaleEnd: () {  },
+    child: OverflowBox(
+      minWidth: 0,
+      minHeight: 0,
+      maxWidth: double.infinity,
+      maxHeight: double.infinity,
+      child: Transform(
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..multiply(item.matrix)
+          ..rotateZ(item.rotationAngle * pi / 180),
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              selectedIndex = index;
+              selectedElementType = item.type;
+              if (item.type == ElementType.text) {
+                _controller1.text = item.text ?? '';
+              }
+            });
+          },
+          child: _buildElementWidget(item, index),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildElementWidget(EditableElement item, int index) {
+  if (item.type == ElementType.text) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: selectedIndex == index && selectedElementType == ElementType.text
+            ? Border.all(color: Colors.yellow, width: 2)
+            : null,
+      ),
+      child: Text(
+        item.text ?? '',
+        style: TextStyle(
+          color: item.textColor,
+          fontSize: item.fontSize,
+          fontWeight: item.fontWeight ?? FontWeight.normal,
+          fontFamily: item.fontFamily ?? 'Roboto',
+        ),
+      ),
+    );
+  } else if (item.type == ElementType.shape) {
+    return Container(
+      width: item.width,
+      height: item.height,
+      decoration: BoxDecoration(
+        border: selectedIndex == index && selectedElementType == ElementType.shape
+            ? Border.all(color: Colors.yellow, width: 2)
+            : null,
+      ),
+      child: CustomPaint(
+        size: Size(item.width, item.height),
+        painter: ShapePainter(
+          shapeType: item.shapeType!,
+          color: item.color,
+        ),
+      ),
+    );
+  } else if (item.type == ElementType.image) {
+    return Opacity(
+      opacity: item.imageOpacity,
+      child: Container(
+        width: item.width,
+        height: item.height,
+        decoration: BoxDecoration(
+          border: selectedIndex == index && selectedElementType == ElementType.image
+              ? Border.all(color: Colors.yellow, width: 2)
+              : null,
+          image: DecorationImage(
+            image: item.imageProvider!,
+            fit: BoxFit.cover,
+          )
+        ),
+
+      ),
+    );
+  }
+  return const SizedBox.shrink();
+}
+
+Widget _buildOpacitySlider() {
+  final item = elements[selectedIndex!];
+  return _buildCustomSlider(
+    'Прозрачность',
+    item.imageOpacity,
+    0.1,
+    1.0,
+    (value) {
+      setState(() {
+        item.imageOpacity = value;
+      });
+    },
+  );
+}
+
+
+
+  Widget _buildLockButton() {
+    return IconButton(
+      icon: Icon(
+        lockAspectRatio ? Icons.lock : Icons.lock_open,
+        color: Colors.white,
+        size: 24,
+      ),
+      onPressed: () {
+        setState(() {
+          lockAspectRatio = !lockAspectRatio;
+        });
+      },
+    );
+  }
+
+
+
+
+  Widget _buildBottomBarItem(IconData icon, String label, ElementType type) {
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -355,6 +707,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
             child: SizedBox(
               height: inputHeight,
               child: TextField(
+                controller: _controller1,
                 decoration: InputDecoration(
                   labelText: 'Текст',
                   labelStyle: const TextStyle(color: Colors.white),
@@ -373,7 +726,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                 style: const TextStyle(color: Colors.white),
                 onChanged: (value) {
                   if (selectedIndex != null) {
-                    setState(() => textItems[selectedIndex!].text = value);
+                    setState(() => elements[selectedIndex!].text = value);
                   }
                 },
               ),
@@ -401,7 +754,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                   fillColor: Colors.grey[800],
                 ),
                 dropdownColor: Colors.grey[800],
-                value: fontWeight,
+                value: elements[selectedIndex!].fontWeight,
                 items: const [
                   DropdownMenuItem(
                     value: FontWeight.normal,
@@ -415,7 +768,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                 ],
                 onChanged: (value) {
                   if (value != null && selectedIndex != null) {
-                    setState(() => textItems[selectedIndex!].fontWeight = value);
+                    setState(() => elements[selectedIndex!].fontWeight = value);
                   }
                 },
                 style: const TextStyle(color: Colors.white),
@@ -455,7 +808,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                   contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                 ),
                 dropdownColor: Colors.grey[800],
-                value: fontFamily,
+                value: elements[selectedIndex!].fontFamily,
                 items: ['Roboto', 'Arial', 'Times New Roman', 'Courier New']
                     .map((font) => DropdownMenuItem(
                           value: font,
@@ -468,7 +821,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                     .toList(),
                 onChanged: (value) {
                   if (value != null && selectedIndex != null) {
-                    setState(() => textItems[selectedIndex!].fontFamily = value);
+                    setState(() => elements[selectedIndex!].fontFamily = value);
                   }
                 },
                 style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -488,11 +841,15 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                       title: const Text('Выберите цвет'),
                       content: SingleChildScrollView(
                         child: ColorPicker(
-                          pickerColor: textColor,
+                          paletteType: PaletteType.hueWheel,
+                          pickerColor: elements[selectedIndex!].textColor,
                           onColorChanged: (color) {
-                            textColor = color;
-                          },
-                        ),
+                            if(selectedIndex != null) {
+                              setState(() {
+                                elements[selectedIndex!].textColor = color;
+                              });
+                            }
+                          }),
                       ),
                       actions: [
                         TextButton(
@@ -519,7 +876,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                         width: 24,
                         height: 24,
                         decoration: BoxDecoration(
-                          color: textColor,
+                          color: elements[selectedIndex!].textColor,
                           borderRadius: BorderRadius.circular(4),
                           border: Border.all(color: Colors.white),
                         ),
@@ -549,9 +906,10 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Expanded(
-            flex: 2,
-            child: DropdownButtonFormField<String>(
+          Flexible(
+            fit: FlexFit.tight,
+            child: DropdownButtonFormField<ShapeType>(
+              isExpanded: true,
               decoration: InputDecoration(
                 labelText: 'Форма',
                 labelStyle: const TextStyle(color: Colors.white),
@@ -567,27 +925,29 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                 fillColor: Colors.grey[800],
               ),
               dropdownColor: Colors.grey[800],
-              value: shapeType,
-              items: ['rectangle', 'circle', 'triangle', 'oval']
-                  .map((shape) => DropdownMenuItem(
-                        value: shape,
-                        child: Text(
-                          shape,
-                          style: const TextStyle(color: Colors.white),
-                        ),
-                      ))
-                  .toList(),
+              value: elements[selectedIndex!].shapeType,
+              items: ShapeType.values.map((shape) {
+                return DropdownMenuItem(
+                  value: shape,
+                  child: Text(
+                    shapeLabels[shape]!,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }).toList(),
               onChanged: (value) {
-                if (value != null) {
-                  setState(() => shapeType = value);
+                if (value != null && selectedIndex != null) {
+                  setState(() {
+                    elements[selectedIndex!].shapeType = value;
+                  });
                 }
               },
-              style: const TextStyle(color: Colors.white),
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(
-            flex: 3,
+          Flexible(
+            fit: FlexFit.tight,
             child: InkWell(
               onTap: () async {
                 final color = await showDialog<Color>(
@@ -596,11 +956,15 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                     title: const Text('Выберите цвет'),
                     content: SingleChildScrollView(
                       child: ColorPicker(
-                        pickerColor: shapeColor,
-                        onColorChanged: (color) {
-                          shapeColor = color;
-                        },
-                      ),
+                          paletteType: PaletteType.hueWheel,
+                          pickerColor: elements[selectedIndex!].color,
+                          onColorChanged: (color) {
+                            if(selectedIndex != null) {
+                              setState(() {
+                                elements[selectedIndex!].color = color;
+                              });
+                            }
+                          }),
                     ),
                     actions: [
                       TextButton(
@@ -627,7 +991,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: shapeColor,
+                        color: elements[selectedIndex!].color,
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: Colors.white),
                       ),
@@ -647,154 +1011,329 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
     );
   }
 
+  Widget _buildLayerButtons() {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => _moveLayerUp(),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.grey[900],
+              side: const BorderSide(color: Colors.white),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+            ),
+            child: const Text(
+              'На передний план',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => _moveLayerDown(),
+            style: OutlinedButton.styleFrom(
+              backgroundColor: Colors.grey[900],
+              side: const BorderSide(color: Colors.white),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.0),
+              ),
+            ),
+            child: const Text(
+              'На задний план',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+
+
+
 //Виджет пользовательского слайдера
   Widget _buildCustomSlider(String label, double value, double min, double max, ValueChanged<double> onChanged) {
-    final TextEditingController controller = TextEditingController(text: value.toStringAsFixed(1));
-    
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(
-                label,
-                style: const TextStyle(color: Colors.white),
-                ),
+  final TextEditingController controller = TextEditingController(text: value.toStringAsFixed(1));
 
-              const SizedBox(width: 10,),
-
-              SizedBox(
-                width: 70,
-                child: TextField(
-                  controller: controller,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    border: InputBorder.none,
-                    isDense: true,
-                  ),
-                  style: const TextStyle(color: Colors.white),
-                  onSubmitted: (text) {
-                    final newValue = double.tryParse(text) ?? value;
-                    final clampedValue = newValue.clamp(min, max).toDouble();
-                    controller.text = clampedValue.toStringAsFixed(1);
-                    onChanged(clampedValue);
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              activeTrackColor: Colors.white,
-              inactiveTrackColor: const Color(0xFF8F8888),
-              trackHeight: 12,
-              thumbColor: Colors.white,
-              overlayColor: Colors.white.withOpacity(0.2),
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
-              trackShape: const RoundedRectSliderTrackShape(),
-            ),
-            child: Slider(
-              value: value,
-              min: min,
-              max: max,
-              divisions: (max - min).toInt(),
-              label: value.toStringAsFixed(1),
-              onChanged: (newValue) {
-                controller.text = newValue.toStringAsFixed(1);
-                onChanged(newValue);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
+  int? divisions;
+  final diff = max - min;
+  if (diff >= 1) {
+    divisions = diff.toInt();
+  } else {
+    divisions = null;
   }
+
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(label, style: const TextStyle(color: Colors.white)),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 70,
+              child: TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+                style: const TextStyle(color: Colors.white),
+                onSubmitted: (text) {
+                  final newValue = double.tryParse(text) ?? value;
+                  final clampedValue = newValue.clamp(min, max).toDouble();
+                  controller.text = clampedValue.toStringAsFixed(1);
+                  onChanged(clampedValue);
+                },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: Colors.white,
+            inactiveTrackColor: const Color(0xFF8F8888),
+            trackHeight: 12,
+            thumbColor: Colors.white,
+            overlayColor: Colors.white.withOpacity(0.2),
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+            trackShape: const RoundedRectSliderTrackShape(),
+          ),
+          child: Slider(
+            value: value,
+            min: min,
+            max: max,
+            divisions: divisions,
+            label: value.toStringAsFixed(1),
+            onChanged: (newValue) {
+              controller.text = newValue.toStringAsFixed(1);
+              onChanged(newValue);
+            },
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
 //Виджет для создания SlideBar для размера шрифта
-  Widget _buildFontSizeSlider() {
-    return _buildCustomSlider(
-      'Размер шрифта', 
-      textItems[selectedIndex!].fontSize, 
-      8, 
-      36, 
-      (value) {
-        setState(() => textItems[selectedIndex!].fontSize = value);
-      },
-    );
-  }
+Widget _buildFontSizeSlider() {
+  final item = elements[selectedIndex!];
+  return _buildCustomSlider(
+    'Размер шрифта',
+    item.fontSize!,
+    8,
+    36,
+    (value) {
+      setState(() {
+        // Пересчёт базового размера так, чтобы масштаб в жестах сохранился
+        item.baseFontSize = value / item.scaleFactor;
+        item.fontSize = value;
+      });
+    },
+  );
+}
+
+Widget _buildShapeWidthSlider() {
+  final item = elements[selectedIndex!];
+  return _buildCustomSlider(
+    'Ширина',
+    item.width,
+    20,
+    500,
+    (value) {
+      setState(() {
+        item.baseWidth = value/item.scaleFactor;
+        item.width = value;
+
+        if(lockAspectRatio) {
+          item.baseHeight = value/item.scaleFactor;
+          item.height = value;
+        }
+      });
+    },
+  );
+}
+
+Widget _buildShapeHeightSlider() {
+  final item = elements[selectedIndex!];
+  return _buildCustomSlider(
+    'Высота',
+    item.height,
+    20,
+    500,
+    (value) {
+      setState(() {
+        item.baseHeight = value/item.scaleFactor;
+        item.height = value;
+
+        if(lockAspectRatio) {
+          item.baseWidth = value/item.scaleFactor;
+          item.width = value;
+        }
+      });
+    },
+  );
+}
+
 
 //Виджет для создания SlideBar для ротации объекта
   Widget _buildRotationSlider() {
     return _buildCustomSlider(
       'Поворот (°)', 
-      textItems[selectedIndex!].rotationAngle, 
+      elements[selectedIndex!].rotationAngle, 
       -180, 
       180, 
       (value) {
-        setState(() => textItems[selectedIndex!].rotationAngle = value);
+        setState(() => elements[selectedIndex!].rotationAngle = value);
       },
     );
   }
 
-  void _selectTextItem(int index) {
-    setState(() {
-      selectedIndex = index;
-      selectedElementType = 'text';
-    });
-  }
-
   void _saveDesign() {
     debugPrint('Сохранение позиций:');
-    for (var item in textItems) {
+    for (var item in elements) {
       debugPrint('${item.text}: ${item.matrix}');
     }
   }
 }
 
-class EditableTextItem {
-  String text;
+
+class EditableElement {
+  ElementType type;
+
+  // Общие свойства
   Matrix4 matrix;
-  double fontSize;
-  Color textColor;
+  double rotationAngle;
+  double scaleFactor;
+  double width;
+  double height;
+  Color color;
+
+  // Для текста
+  String? text;
+  double? fontSize;
+  double? baseFontSize;
   String fontFamily;
   FontWeight fontWeight;
-  double rotationAngle;
-  
-  EditableTextItem({
-    required this.text,
+  Color textColor;
+
+  // Для фигур
+  ShapeType? shapeType;
+  double? baseWidth;
+  double? baseHeight;
+
+  //Для изображений
+  ImageProvider? imageProvider;
+  double imageOpacity;
+
+  EditableElement({
+    required this.type,
     required this.matrix,
-    this.fontSize = 18,
-    this.textColor = Colors.white,
+    this.rotationAngle = 0,
+    this.scaleFactor = 1.0,
+    this.width = 100,
+    this.height = 100,
+    this.color = Colors.white,
+
+    // текстовые
+    this.text,
+    this.fontSize,
+    this.baseFontSize,
     this.fontFamily = 'Roboto',
     this.fontWeight = FontWeight.normal,
-    this.rotationAngle = 0,
-  });
+    this.textColor = Colors.white,
+
+    // фигуры
+    this.shapeType,
+    this.baseWidth,
+    this.baseHeight,
+
+    //изображение
+    this.imageProvider,
+    this.imageOpacity = 1.0,
+  }) {
+    // Если текст — выставляем базовые размеры
+    if (type == ElementType.text) {
+      baseFontSize ??= fontSize ?? 18;
+    }
+  }
+
 }
 
-// Заглушка для ColorPicker
-class ColorPicker extends StatelessWidget {
-  final Color pickerColor;
-  final ValueChanged<Color> onColorChanged;
+extension EditableElementMapper on EditableElement {
+  Map<String, dynamic> toJson() {
+    return {
+      "type": type.toString().split('.').last, // "text", "shape", "image"
+      "matrix": matrix.storage.toList().toString(),       // JSON array из 16 чисел
+      "rotation_angle": rotationAngle,
+      "scale_factor": scaleFactor,
+      "width": width,
+      "height": height,
+      "color": '#${color.value.toRadixString(16).padLeft(8, '0')}',
 
-  const ColorPicker({
-    super.key,
-    required this.pickerColor,
-    required this.onColorChanged,
-  });
+      // text
+      "text": text,
+      "font_size": fontSize,
+      "base_font_size": baseFontSize,
+      "font_family": fontFamily,
+      "font_weight": fontWeight == FontWeight.bold ? "bold" : "normal",
+      "text_color": '#${textColor.value.toRadixString(16).padLeft(8, '0')}',
+
+      // shape
+      "shape_type": shapeType?.toString().split('.').last,
+
+      // image
+      "image_url": null, // TODO: заменить ссылкой после загрузки на сервер
+      "image_opacity": imageOpacity,
+    };
+  }
+}
+
+
+class ShapePainter extends CustomPainter {
+  final ShapeType shapeType;
+  final Color color;
+
+  ShapePainter({required this.shapeType, required this.color});
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 300,
-      height: 200,
-      color: Colors.grey[800],
-      child: const Center(
-        child: Text('Реальный ColorPicker будет здесь', style: TextStyle(color: Colors.white)),
-      ),
-    );
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+
+    switch (shapeType) {
+      case ShapeType.square:
+        canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
+        break;
+
+      case ShapeType.circle:
+        final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+        canvas.drawOval(rect, paint);
+        break;
+
+      case ShapeType.triangle:
+        final path = Path()
+          ..moveTo(size.width / 2, 0)
+          ..lineTo(0, size.height)
+          ..lineTo(size.width, size.height)
+          ..close();
+        canvas.drawPath(path, paint);
+        break;
+    }
   }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

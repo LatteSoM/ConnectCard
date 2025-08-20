@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/share_visit.dart';
+import 'package:connect_card/screens/visit_card_designer.dart';
 import 'package:connect_card/screens/visit_card_profile.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
@@ -92,6 +94,73 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
     }
   }
 
+  void showConfirmDeleteDialog(BuildContext context, String index) {
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          insetPadding: EdgeInsets.symmetric(horizontal: 30, vertical: 100),
+          backgroundColor: Color(0xFF1E1E1E),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.delete, size: 40, color: Colors.blueAccent),
+                SizedBox(height: 16),
+                Text(
+                  'Вы действительно хотите удалить визитку?',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                ),
+
+                SizedBox(height: 12),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        // print('Пользователь пропустил');
+                      },
+                      child: Text(
+                        'Нет',
+                        style: TextStyle(color: Colors.grey[300]),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _deleteCard(index);
+                      },
+                      style: TextButton.styleFrom(
+                        backgroundColor: Colors.purpleAccent.withOpacity(0.2),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Удалить',
+                        style: TextStyle(
+                          color: Colors.purpleAccent,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showCardContextMenu(BuildContext context, Offset position, String index) async {
     setState(() {
       selectedCardId = index;
@@ -125,7 +194,7 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
     if (selected == 'share') {
       Navigator.push(context, MaterialPageRoute(builder: (context) => ShareVisit(cardId: index,)));
     } else if (selected == 'delete') {
-      _deleteCard(index);
+      showConfirmDeleteDialog(context, index);
     }
   }
 
@@ -158,10 +227,11 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                         child: IconButton(
                           icon: const Icon(Icons.add, color: Colors.white),
                           onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => VisitCardProfile()))
-                            .then((_){
-                              if(mounted) _loadCards();
-                            });
+                            // Navigator.push(context, MaterialPageRoute(builder: (context) => VisitCardProfile()))
+                            // .then((_){
+                            //   if(mounted) _loadCards();
+                            // });
+                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => VisitCardDesigner()));
                           },
                         ),
                       ),
@@ -229,12 +299,15 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                                 },
                                 child: Opacity(
                                   opacity: selectedCardId == null || isSelected ? 1.0 : 0.5,
-                                  child: VisitCard(
+                                  child: card.elements.length > 0
+                                  ? VisitCardRenderDesign(elements: card.elements)
+                                  : VisitCard(
                                     fullName: card.fullname,
                                     position: card.position ?? '',
                                     company: card.company ?? '',
                                     socialLinks: card.linkWidgets,
                                     isSelected: isSelected,
+                                    avatar: card.avatar,
                                   ),
                                 ),
                               ),
@@ -270,8 +343,10 @@ class VisitCard extends StatefulWidget {
   final List<LinkWidget> socialLinks;
   final String qrCodeAssetPath;
   final double avatarRadius;
+  final String? avatar;
   final Color cardColor;
   final bool isSelected;
+  final Color? placeholderColor;
 
 
   const VisitCard({
@@ -283,7 +358,9 @@ class VisitCard extends StatefulWidget {
     this.isSelected = false,
     this.qrCodeAssetPath = 'assets/icons/qr_code.png',
     this.avatarRadius = 48.0,
+    this.avatar,
     this.cardColor = const Color(0xFF1B1A20),
+    this.placeholderColor,
   }) : super(key: key);
 
   @override
@@ -420,7 +497,7 @@ class _VisitCardState extends State<VisitCard> with SingleTickerProviderStateMix
                   children: [
                     Align(
                       alignment: Alignment.center,
-                      child: CircleAvatar(radius: widget.avatarRadius),
+                      child: _buildAvatar(),
                     ),
                     SizedBox(height: 15),
                     ...List.generate(3, (i) {
@@ -501,6 +578,28 @@ class _VisitCardState extends State<VisitCard> with SingleTickerProviderStateMix
       ),
     );
   }
+
+  Widget _buildAvatar() {
+    if (widget.avatar == null || widget.avatar!.isEmpty) {
+      return CircleAvatar(
+        radius: widget.avatarRadius,
+        backgroundColor: widget.placeholderColor ?? Colors.grey[300],
+        child: Icon(
+          Icons.person,
+          size: widget.avatarRadius,
+          color: Colors.white,
+        ),
+      );
+    }
+
+    return CircleAvatar(
+      radius: widget.avatarRadius,
+      backgroundImage: NetworkImage(widget.avatar!),
+      onBackgroundImageError: (exception, stackTrace) {
+        //error
+      },
+    );
+  }
 }
 
 class _SocialLinkWidget extends StatelessWidget {
@@ -534,5 +633,145 @@ class _SocialLinkWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+
+class VisitCardRenderDesign extends StatelessWidget {
+  final List<CardElement> elements;
+
+  final Map<String, FontWeight> fontWeightMap = {
+    'normal': FontWeight.normal,
+    'bold': FontWeight.bold,
+    'w100': FontWeight.w100,
+    'w200': FontWeight.w200,
+    'w300': FontWeight.w300,
+    'w400': FontWeight.w400,
+    'w500': FontWeight.w500,
+    'w600': FontWeight.w600,
+    'w700': FontWeight.w700,
+    'w800': FontWeight.w800,
+    'w900': FontWeight.w900,
+  };
+
+  VisitCardRenderDesign({Key? key, required this.elements});
+  
+
+  Color parseColor(String hexColor) {
+    hexColor = hexColor.replaceFirst('#', '');
+    int colorValue = int.parse(hexColor, radix: 16);
+    return Color(colorValue);
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 20), //Посмотреть и подшаманить
+      child: Container(
+      width: MediaQuery.of(context).size.width * 0.9,
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.blueAccent, Colors.purpleAccent],
+                ),
+              ),
+            ),
+          ),
+          ...elements.map((e) => _buildElement(e)),
+        ],
+      ),
+    ),
+
+    );
+  }
+
+Widget _buildElement(CardElement element) {
+  return OverflowBox(
+    minWidth: 0,
+    minHeight: 0,
+    maxWidth: double.infinity,
+    maxHeight: double.infinity,
+    child: Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()
+        ..multiply(element.matrix)
+        ..rotateZ(element.rotationAngle * pi / 180),
+      child: _buildElementWidget(element),
+    ),
+  );
+}
+
+
+
+  Widget _buildElementWidget(CardElement element) {
+    ElementType type = ElementType.values.firstWhere(
+      (e) => e.toString().split('.').last == element.type,
+      orElse: () => ElementType.text,
+    );
+
+    final color = parseColor(type == ElementType.text ? element.textColor! : element.color!);
+    
+    switch (type) {
+      case ElementType.text:
+        return Text(
+          element.text ?? '',
+          style: TextStyle(
+            fontSize: element.fontSize?.toDouble() ?? element.baseFontSize?.toDouble() ?? 18,
+            fontFamily: element.fontFamily,
+            color: element.textColor != null 
+                ? color 
+                : Colors.black,
+            fontWeight: fontWeightMap[element.fontWeight],
+          ),
+        );
+      
+      case ElementType.image:
+        return Container(
+          width: element.width.toDouble(),
+          height: element.height,
+          color: element.color != null 
+              ? color
+              : Colors.grey,
+          child: const Icon(Icons.image, color: Colors.white),
+        );
+      
+      case ElementType.shape:
+        ShapeType shapeType = ShapeType.values.firstWhere(
+          (e) => e.toString().split('.').last == element.shapeType,
+          orElse: () => ShapeType.circle,
+        );
+        return Container(
+          width: element.width.toDouble(),
+          height: element.height.toDouble(),
+          child: CustomPaint(
+            painter: ShapePainter(
+              shapeType: shapeType,
+              color: color!),
+          ),
+        );
+      
+      default:
+        return Container();
+    }
   }
 }

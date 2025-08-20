@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class User {
@@ -144,6 +145,7 @@ class BusinessCard {
   final String? userId;
   final List<ContactInfo> contactInfos;
   final List<LinkWidget> linkWidgets;
+  final List<CardElement> elements;
 
   BusinessCard({
     required this.id,
@@ -155,6 +157,7 @@ class BusinessCard {
     this.userId,
     required this.contactInfos,
     required this.linkWidgets,
+    required this.elements,
   });
 
   factory BusinessCard.fromJson(Map<String, dynamic> json) {
@@ -172,8 +175,87 @@ class BusinessCard {
       linkWidgets: (json['link_widgets'] as List<dynamic>?)
           ?.map((e) => LinkWidget.fromJson(e as Map<String, dynamic>))
           .toList() ?? [],
+      elements: (json['elements'] as List<dynamic>?)
+          ?.map((e) => CardElement.fromJson(e as Map<String, dynamic>))
+          .toList() ?? [],
     );
   }
+}
+
+class CardElement {
+  final String type;
+  final Matrix4 matrix;
+  final double rotationAngle;
+  final double scaleFactor;
+  final double width;
+  final double height;
+  final String? color;
+  final String? text;
+  final double? fontSize;
+  final double? baseFontSize;
+  final String? fontFamily;
+  final String? fontWeight;
+  final String? textColor;
+  final String? shapeType;
+  final String? imageUrl;
+  final double imageOpacity;
+
+  CardElement({
+    required this.type,
+    required this.matrix,
+    required this.rotationAngle,
+    required this.scaleFactor,
+    required this.width,
+    required this.height,
+    this.color,
+    this.text,
+    this.fontSize,
+    this.baseFontSize,
+    this.fontFamily,
+    this.fontWeight,
+    this.textColor,
+    this.shapeType,
+    this.imageUrl,
+    required this.imageOpacity,
+  });
+
+  factory CardElement.fromJson(Map<String, dynamic> json) {
+    Matrix4 parseMatrix(String? matrixString) {
+      if (matrixString == null) {
+        return Matrix4.identity();
+      }
+
+      try {
+        final cleanedString = matrixString.replaceAll('[', '').replaceAll(']', '');
+        final values = cleanedString.split(',').map((e) => double.parse(e.trim())).toList();
+        
+        return Matrix4.fromList(values);
+      } catch (e) {
+        print('Error parsing matrix: $e');
+        return Matrix4.identity();
+      }
+    }
+
+    return CardElement(
+      type: json['type'] as String? ?? '',
+      matrix: parseMatrix(json['matrix'] as String?),
+      rotationAngle: (json['rotation_angle'] as num?)?.toDouble() ?? 0.0,
+      scaleFactor: (json['scale_factor'] as num?)?.toDouble() ?? 1.0,
+      width: (json['width'] as num?)?.toDouble() ?? 0.0,
+      height: (json['height'] as num?)?.toDouble() ?? 0.0,
+      color: json['color'] as String?,
+      text: json['text'] as String?,
+      fontSize: (json['font_size'] as num?)?.toDouble(),
+      baseFontSize: (json['base_font_size'] as num?)?.toDouble(),
+      fontFamily: json['font_family'] as String?,
+      fontWeight: json['font_weight'] as String?,
+      textColor: json['text_color'] as String?,
+      shapeType: json['shape_type'] as String?,
+      imageUrl: json['image_url'] as String?,
+      imageOpacity: (json['image_opacity'] as num?)?.toDouble() ?? 1.0,
+    );
+  }
+
 }
 
 class ContactInfo {

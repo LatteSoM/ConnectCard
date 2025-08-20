@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
@@ -7,7 +8,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VisitCardProfile extends StatefulWidget{
   @override
@@ -36,6 +39,8 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
   SocialMedia socialMedia = SocialMedia();
 
   final phoneMask = MaskTextInputFormatter(mask: '+7 (###) ###-##-##');
+
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -152,6 +157,33 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
       client.close();
     }
     // Navigator.pop(context);
+  }
+
+    Future<void> _pickImage() async {
+    // if(await Permission.photos.request().isGranted) {
+    //   final picker = ImagePicker();
+    //   final pickedFile = await picker.pickImage(
+    //     source: ImageSource.gallery,
+    //   );
+
+    //   if(pickedFile != null) {
+    //     setState(() {
+    //       _selectedImage = File(pickedFile.path);
+    //     });
+    //   }
+    // }else {
+    //   SnackbarHelper.showMessage(context, 'Необходимо разрешение для доступа к галерее', isSuccess: false);
+    // }
+    final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+      );
+
+      if(pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+      }
   }
 
   void _removeMainInfo(String type) {
@@ -570,10 +602,20 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
     return Stack(
       alignment: Alignment.center,
       children: [
-        CircleAvatar(
+        _selectedImage != null
+        ? CircleAvatar(
           radius: 48,
-          backgroundImage: NetworkImage('https://example.com/your-avatar.jpg'), // Заменить на свою
-        ),
+          backgroundImage: FileImage(_selectedImage!),
+        )
+        : CircleAvatar(
+            radius: 48,
+            backgroundColor: Colors.grey[300],
+            child: Icon(
+              Icons.person,
+              size: 48,
+              color: Colors.white,
+            ),
+          ),
 
         if (_isEditing)
           Container(
@@ -588,7 +630,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
         if (_isEditing)
           GestureDetector(
             onTap: () {
-              
+              _pickImage();
             },
             child: Icon(
               Icons.photo_camera,
