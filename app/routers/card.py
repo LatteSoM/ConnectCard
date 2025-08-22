@@ -128,39 +128,89 @@ def read_user_cards(
         .where(Card.user_id == user_id)
     ).all()
     
-    # if not cards:
-    #     raise HTTPException(
-    #         status_code=404,
-    #         detail=f"No cards found for user with id {user_id}"
-    #     )
+    if not cards:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No cards found for user with id {user_id}"
+        )
     
     return cards
 
+# @router.put("/{card_id}", response_model=CardResponse)
+# def update_card(card_id: UUID, body: dict, card: CardCreate, session: Session = Depends(get_session)):
+#     db_card = session.exec(select(Card).where(Card.id == card_id)).first()
+#     if db_card is None:
+#         raise HTTPException(status_code=404, detail="Card not found")
+    
+#     # Update basic fields
+#     for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids'}).items():
+#         setattr(db_card, key, value)
+    
+#     # Update contact infos
+#     if card.contact_info_ids:
+#         contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))).all()
+#         db_card.contact_infos = contact_infos
+
+#     # Update link widgets
+#     if card.link_widget_ids:
+#         link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
+#         db_card.link_widgets = link_widgets
+        
+#      # Обработка elements
+#     if "elements" in body:
+#         # Удаляем существующие элементы для этой карточки
+#         session.exec(select(EditableElement).where(EditableElement.card_id == card_id)).delete()
+#         # Создаем новые элементы
+#         for el_data in body["elements"]:
+#             el = EditableElement(**el_data, card_id=card_id)
+#             session.add(el)
+
+#     session.commit()
+#     session.refresh(db_card)
+#     return db_card
+
+
 @router.put("/{card_id}", response_model=CardResponse)
-def update_card(card_id: UUID, card: CardCreate, session: Session = Depends(get_session)):
+def update_card(card_id: UUID, card_data: CardCreate, session: Session = Depends(get_session)):
     db_card = session.exec(select(Card).where(Card.id == card_id)).first()
     if db_card is None:
         raise HTTPException(status_code=404, detail="Card not found")
     
     # Update basic fields
-    for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids'}).items():
+    for key, value in card_data.model_dump(exclude={'contact_info_ids', 'link_widget_ids', 'elements'}).items():
         setattr(db_card, key, value)
     
     # Update contact infos
-    if card.contact_info_ids:
-        contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))).all()
+    if card_data.contact_info_ids:
+        contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card_data.contact_info_ids))).all()
         db_card.contact_infos = contact_infos
 
     # Update link widgets
-    if card.link_widget_ids:
-        link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
+    if card_data.link_widget_ids:
+        link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card_data.link_widget_ids))).all()
         db_card.link_widgets = link_widgets
-        
-    for elem in db_card.elements:
-        session.delete(elem)
-    for elem_data in card.elements:
-        db_element = EditableElement(**elem_data.model_dump(), card_id=db_card.id)
-        session.add(db_element)
+    
+    # Обработка elements
+    if card_data.elements:
+        # Удаляем существующие элементы для этой карточки
+        stmt = select(EditableElement).where(EditableElement.card_id == str(card_id))
+        result = session.exec(stmt)
+        for element in result:
+            session.delete(element)
+        # Альтернатива: массовое удаление с синхронизацией
+        # session.exec(stmt.execution_options(synchronize_session="fetch")).delete()
+
+        # Преобразуем Pydantic-модели EditableElementCreate в SQL-объекты EditableElement
+        for el_data in card_data.elements:
+            element_data = el_data.model_dump()  # Получаем словарь из Pydantic-модели
+            element_data["card_id"] = str(card_id)  # Добавляем card_id
+            # Удаляем необязательные поля, если они None
+            for key in list(element_data.keys()):
+                if element_data[key] is None:
+                    element_data.pop(key, None)
+            # Создаем объект EditableElement
+            el = EditableElement(**element_data)
+            session.add(el)
 
     session.commit()
     session.refresh(db_card)
