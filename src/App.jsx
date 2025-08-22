@@ -23,6 +23,9 @@ import RegistrationScreen from './pages/RegisterScreen/RegisterScreen.jsx';
 import ProfileScreen from './pages/ProfilePage/ProfileScreen.jsx';
 import SettingsScreen from './pages/SettingsScreen/SettingsScreen.jsx';
 import VisitCardProfile from './pages/VisitCardProfile/VisitCardProfile.jsx';
+import VisitCardDesigner from './pages/VisitCardDesigner/VisitCardDesigner.jsx';
+import VisitCardsList from './pages/ListOfVisitCards/ListOfVisitCards.jsx';
+
 
 const App = () => {
   return (
@@ -46,6 +49,8 @@ const App = () => {
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/card_profile" element={<VisitCardProfile />} />
+        <Route path="/designer/:id" element={<VisitCardDesigner />} />
+        <Route path="/list_of_visit_cards" element={<VisitCardsList />} />
         {/* <Route path="/login" element={<LoginScreen />} /> */}
         <Route path="/registration" element={<Registration />} />
         {/* <Route path="/register" element={<RegistrationScreen />} /> */}
