@@ -111,18 +111,49 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
         body: jsonEncode({'widgets': socialMedia.toWidgetsList()}),
       );
 
-      final card = await client.post(
-        Uri.parse('$baseUrl/cards/'),
-        headers: headers,
-        body: jsonEncode({
-          'fullname': _nameController.text.trim(),
-          'company': _companyController.text.trim(),
-          'position': _positionController.text.trim(),
-          'about': _aboutController.text.trim(),
-          'contact_info_ids': (jsonDecode(contacts.body) as List).map((c) => c['id']).toList(),
-          'link_widget_ids': (jsonDecode(widgets.body) as List).map((w) => w['id']).toList(),
-        }),
-      );
+
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/cards/'));
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+      });
+
+      final data = {
+        'fullname': _nameController.text.trim(),
+        'company': _companyController.text.trim(),
+        'position': _positionController.text.trim(),
+        'about': _aboutController.text.trim(),
+        'contact_info_ids': (jsonDecode(contacts.body) as List).map((c) => c['id']).toList(),
+        'link_widget_ids': (jsonDecode(widgets.body) as List).map((w) => w['id']).toList(),
+      };
+
+      request.fields['data'] = jsonEncode(data);
+
+      if(_selectedImage != null) {
+        final fileStram = http.ByteStream(_selectedImage!.openRead());
+        final length = await _selectedImage!.length();
+        final multipartFile = http.MultipartFile(
+          'avatar',
+          fileStram,
+          length,
+          filename: _selectedImage!.path.split('/').last,
+        );
+        request.files.add(multipartFile);
+      }
+
+      final response = await request.send();
+
+      // final card = await client.post(
+      //   Uri.parse('$baseUrl/cards/'),
+      //   headers: headers,
+      //   body: jsonEncode({
+      //     'fullname': _nameController.text.trim(),
+      //     'company': _companyController.text.trim(),
+      //     'position': _positionController.text.trim(),
+      //     'about': _aboutController.text.trim(),
+      //     'contact_info_ids': (jsonDecode(contacts.body) as List).map((c) => c['id']).toList(),
+      //     'link_widget_ids': (jsonDecode(widgets.body) as List).map((w) => w['id']).toList(),
+      //   }),
+      // );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

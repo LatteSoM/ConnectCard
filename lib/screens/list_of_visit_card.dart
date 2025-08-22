@@ -594,7 +594,7 @@ class _VisitCardState extends State<VisitCard> with SingleTickerProviderStateMix
 
     return CircleAvatar(
       radius: widget.avatarRadius,
-      backgroundImage: NetworkImage(widget.avatar!),
+      backgroundImage: NetworkImage('$baseUrl${widget.avatar!}'),
       onBackgroundImageError: (exception, stackTrace) {
         //error
       },
@@ -655,7 +655,7 @@ class VisitCardRenderDesign extends StatelessWidget {
   };
 
   VisitCardRenderDesign({Key? key, required this.elements});
-  
+  final baseUrl = dotenv.env['BASE_URL'];
 
   Color parseColor(String hexColor) {
     hexColor = hexColor.replaceFirst('#', '');
@@ -746,14 +746,27 @@ Widget _buildElement(CardElement element) {
         );
       
       case ElementType.image:
-        return Container(
-          width: element.width.toDouble(),
-          height: element.height,
-          color: element.color != null 
-              ? color
-              : Colors.grey,
-          child: const Icon(Icons.image, color: Colors.white),
+        return Opacity(
+          opacity: element.imageOpacity,
+          child: Container(
+            width: element.width,
+            height: element.height,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage('$baseUrl${element.imageUrl}'),
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
         );
+        // return Container(
+        //   width: element.width.toDouble(),
+        //   height: element.height,
+        //   color: element.color != null 
+        //       ? color
+        //       : Colors.grey,
+        //   child: Image.network('$baseUrl${element.imageUrl}'),
+        // );
       
       case ElementType.shape:
         ShapeType shapeType = ShapeType.values.firstWhere(

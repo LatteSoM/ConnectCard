@@ -9,6 +9,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 
 class VisitCardDesigner extends StatefulWidget {
   const VisitCardDesigner({super.key});
@@ -73,25 +74,43 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
 
   Future<void> _saveCard() async {
     final token = await storage.read(key: 'token');
-    final headers = {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    };
+
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/cards/'));
+    request.headers['Authorization'] = 'Bearer $token';
+    // final headers = {
+    //   'Authorization': 'Bearer $token',
+    //   'Content-Type': 'application/json',
+    // };
 
     final body = {
       "fullname": "AlexTest",
       "elements": elements.map((e) => e.toJson()).toList(),
     };
 
-    for(var item in elements) {
-      print(item.color);
+    request.fields['data'] = jsonEncode(body);
+
+    for(final e in elements) {
+      if(e.type == ElementType.image) {
+        final file = (e.imageProvider as FileImage).file;
+        final fileStream = http.ByteStream(file.openRead());
+        final length = await file.length();
+        request.files.add(http.MultipartFile(
+  'element_images', 
+  fileStream, 
+  length,
+  filename: '${e.tempId}_${file.path.split('/').last}' // <-- tempId в начале
+));
+
+      }
     }
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/cards/'),
-      headers: headers,
-      body: jsonEncode(body),
-    );
+    final response = await request.send();
+
+    // final response = await http.post(
+    //   Uri.parse('$baseUrl/cards/'),
+    //   headers: headers,
+    //   body: jsonEncode(body),
+    // );
 
     if(response.statusCode == 200) {
       SnackbarHelper.showMessage(context, 'Успешно');
@@ -1212,6 +1231,7 @@ Widget _buildShapeHeightSlider() {
 
 
 class EditableElement {
+  String tempId = const Uuid().v4();
   ElementType type;
 
   // Общие свойства
@@ -1276,6 +1296,7 @@ class EditableElement {
 extension EditableElementMapper on EditableElement {
   Map<String, dynamic> toJson() {
     return {
+      'temp_id': tempId,
       "type": type.toString().split('.').last, // "text", "shape", "image"
       "matrix": matrix.storage.toList().toString(),       // JSON array из 16 чисел
       "rotation_angle": rotationAngle,
@@ -1296,7 +1317,7 @@ extension EditableElementMapper on EditableElement {
       "shape_type": shapeType?.toString().split('.').last,
 
       // image
-      "image_url": null, // TODO: заменить ссылкой после загрузки на сервер
+      "image_url": null,
       "image_opacity": imageOpacity,
     };
   }
