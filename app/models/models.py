@@ -57,6 +57,7 @@ class Analytics(SQLModel, table=True):
 #Таблица элементов карточки
 class EditableElement(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
+    temp_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     type: str  # допустим что-то типа, 'text', 'shape', 'image'
     matrix: str  # JSON представление of Matrix4
     rotation_angle: float = 0.0

@@ -1,8 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
+import json
+import os
+import shutil
+import uuid
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Query, UploadFile
 from datetime import datetime
 from sqlmodel import Session, select, func
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
+
+from app.config.config import AVATAR_DIR
 
 from ..auth.auth import get_current_user
 from ..database import get_session
@@ -16,6 +22,7 @@ router = APIRouter(
 )
 
 class EditableElementBase(BaseModel):
+    temp_id: str
     type: str
     matrix: str
     rotation_angle: float = 0.0
@@ -68,10 +75,22 @@ class ActionCreate(BaseModel):
 
 
 @router.post("/", response_model=CardResponse)
-def create_card(card: CardCreate, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+def create_card(data: str = Form(...), avatar: UploadFile | None = File(None), element_images: list[UploadFile] = File([]), current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    
+    card = CardCreate(**json.loads(data))
+
+    avatar_path = None
+    if avatar:
+        ext = os.path.splitext(avatar.filename)[1]
+        filename = f"{uuid.uuid4()}{ext}"
+        path = os.path.join(AVATAR_DIR, filename)
+        with open(path, "wb") as buffer:
+            shutil.copyfileobj(avatar.file, buffer)
+        avatar_path = f"/avatars/{filename}"
+    
     # Create base card
     db_card = Card(
-        avatar=card.avatar,
+        avatar=avatar_path or card.avatar,
         fullname=card.fullname,
         company=card.company,
         position=card.position,
@@ -92,10 +111,54 @@ def create_card(card: CardCreate, current_user: User = Depends(get_current_user)
         link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
         db_card.link_widgets.extend(link_widgets)
         
+    # for elem_data in card.elements:
+    #     db_element = EditableElement(**elem_data.model_dump(), card_id=db_card.id)
+    #     session.add(db_element)
+    element_files_map = {f.filename.split("_")[0]: f for f in element_images}
+
+    # Добавляем элементы
     for elem_data in card.elements:
-        db_element = EditableElement(**elem_data.model_dump(), card_id=db_card.id)
+        image_url = None
+        if elem_data.type == "image" and getattr(elem_data, "temp_id", None):
+            f = element_files_map.get(elem_data.temp_id)
+            if f:
+                ext = os.path.splitext(f.filename)[1]
+                filename = f"{uuid.uuid4()}{ext}"
+                path = os.path.join(AVATAR_DIR, filename)
+                with open(path, "wb") as buffer:
+                    shutil.copyfileobj(f.file, buffer)
+                image_url = f"/avatars/{filename}"
+
+        elem_dict = elem_data.model_dump()
+        elem_dict['image_url'] = image_url  # перезаписываем
+        db_element = EditableElement(**elem_dict, card_id=db_card.id)
         session.add(db_element)
 
+
+    session.commit()
+    session.refresh(db_card)
+    return db_card
+
+@router.post("/{card_id}/avatar", response_model=CardResponse)
+async def upload_avatar(
+    card_id: UUID,
+    avatar: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    db_card = session.get(Card, card_id)
+    if not db_card or db_card.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Card not found")
+
+    ext = os.path.splitext(avatar.filename)[1]
+    filename = f"{uuid4()}{ext}"
+    avatar_path = os.path.join(AVATAR_DIR, filename)
+
+    with open(avatar_path, "wb") as buffer:
+        shutil.copyfileobj(avatar.file, buffer)
+
+    db_card.avatar = f"/avatars/{filename}"
+    session.add(db_card)
     session.commit()
     session.refresh(db_card)
     return db_card
@@ -128,89 +191,39 @@ def read_user_cards(
         .where(Card.user_id == user_id)
     ).all()
     
-    if not cards:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No cards found for user with id {user_id}"
-        )
+    # if not cards:
+    #     raise HTTPException(
+    #         status_code=404,
+    #         detail=f"No cards found for user with id {user_id}"
+    #     )
     
     return cards
 
-# @router.put("/{card_id}", response_model=CardResponse)
-# def update_card(card_id: UUID, body: dict, card: CardCreate, session: Session = Depends(get_session)):
-#     db_card = session.exec(select(Card).where(Card.id == card_id)).first()
-#     if db_card is None:
-#         raise HTTPException(status_code=404, detail="Card not found")
-    
-#     # Update basic fields
-#     for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids'}).items():
-#         setattr(db_card, key, value)
-    
-#     # Update contact infos
-#     if card.contact_info_ids:
-#         contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))).all()
-#         db_card.contact_infos = contact_infos
-
-#     # Update link widgets
-#     if card.link_widget_ids:
-#         link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
-#         db_card.link_widgets = link_widgets
-        
-#      # Обработка elements
-#     if "elements" in body:
-#         # Удаляем существующие элементы для этой карточки
-#         session.exec(select(EditableElement).where(EditableElement.card_id == card_id)).delete()
-#         # Создаем новые элементы
-#         for el_data in body["elements"]:
-#             el = EditableElement(**el_data, card_id=card_id)
-#             session.add(el)
-
-#     session.commit()
-#     session.refresh(db_card)
-#     return db_card
-
-
 @router.put("/{card_id}", response_model=CardResponse)
-def update_card(card_id: UUID, card_data: CardCreate, session: Session = Depends(get_session)):
+def update_card(card_id: UUID, card: CardCreate, session: Session = Depends(get_session)):
     db_card = session.exec(select(Card).where(Card.id == card_id)).first()
     if db_card is None:
         raise HTTPException(status_code=404, detail="Card not found")
     
     # Update basic fields
-    for key, value in card_data.model_dump(exclude={'contact_info_ids', 'link_widget_ids', 'elements'}).items():
+    for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids'}).items():
         setattr(db_card, key, value)
     
     # Update contact infos
-    if card_data.contact_info_ids:
-        contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card_data.contact_info_ids))).all()
+    if card.contact_info_ids:
+        contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))).all()
         db_card.contact_infos = contact_infos
 
     # Update link widgets
-    if card_data.link_widget_ids:
-        link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card_data.link_widget_ids))).all()
+    if card.link_widget_ids:
+        link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
         db_card.link_widgets = link_widgets
-    
-    # Обработка elements
-    if card_data.elements:
-        # Удаляем существующие элементы для этой карточки
-        stmt = select(EditableElement).where(EditableElement.card_id == str(card_id))
-        result = session.exec(stmt)
-        for element in result:
-            session.delete(element)
-        # Альтернатива: массовое удаление с синхронизацией
-        # session.exec(stmt.execution_options(synchronize_session="fetch")).delete()
-
-        # Преобразуем Pydantic-модели EditableElementCreate в SQL-объекты EditableElement
-        for el_data in card_data.elements:
-            element_data = el_data.model_dump()  # Получаем словарь из Pydantic-модели
-            element_data["card_id"] = str(card_id)  # Добавляем card_id
-            # Удаляем необязательные поля, если они None
-            for key in list(element_data.keys()):
-                if element_data[key] is None:
-                    element_data.pop(key, None)
-            # Создаем объект EditableElement
-            el = EditableElement(**element_data)
-            session.add(el)
+        
+    for elem in db_card.elements:
+        session.delete(elem)
+    for elem_data in card.elements:
+        db_element = EditableElement(**elem_data.model_dump(), card_id=db_card.id)
+        session.add(db_element)
 
     session.commit()
     session.refresh(db_card)
