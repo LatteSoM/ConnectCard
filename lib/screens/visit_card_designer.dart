@@ -95,12 +95,11 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
         final fileStream = http.ByteStream(file.openRead());
         final length = await file.length();
         request.files.add(http.MultipartFile(
-  'element_images', 
-  fileStream, 
-  length,
-  filename: '${e.tempId}_${file.path.split('/').last}' // <-- tempId в начале
-));
-
+          'element_images', 
+          fileStream, 
+          length,
+          filename: '${e.tempId}_${file.path.split('/').last}' // <-- tempId в начале
+        ));
       }
     }
 

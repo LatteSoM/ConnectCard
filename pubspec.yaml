@@ -18,7 +18,7 @@ dependencies:
   bottom_navy_bar: ^6.1.0
   qr_flutter: ^4.1.0
   share_plus: ^11.0.0
-  qr_code_scanner: ^1.0.1
+  qr_code_scanner_plus: ^2.0.10+1
   permission_handler: ^12.0.1
   mask_text_input_formatter: ^2.4.0
   intl: ^0.20.2

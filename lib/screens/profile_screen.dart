@@ -12,7 +12,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget{
@@ -25,6 +25,7 @@ class ProfileScreen extends StatefulWidget{
 enum OverlayMessageType { enteringEdit, savingChanges, cancelingEdit }
 
 class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin{
+  final storage = FlutterSecureStorage();
   late AnimationController _overlayController;
   bool _showOverlay = false;
   OverlayMessageType _overlayMessageType = OverlayMessageType.enteringEdit;
@@ -48,8 +49,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   String name = "";
   String? avatar = "";
   bool _isChangingPassword = false;
-  TextEditingController _newPasswordController = TextEditingController();
-  TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _newPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  final phoneMask = MaskTextInputFormatter(mask: '+7 (###) ###-##-##');
+
+  File? _selectedImage;
 
   @override
   void initState(){
@@ -99,33 +104,101 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   Future<void> _changeInfo() async{
     setState(() => _overlayMessageType = OverlayMessageType.savingChanges);
     await _showOverlayAnimation();
-    final url = Uri.parse('$baseUrl/users/${user.id}');
-    final updateUser = user.copyWith(
+    final token = await storage.read(key: 'token');
+
+    final request = http.MultipartRequest('PUT', Uri.parse('$baseUrl/users/${user.id}'));
+    request.headers['Authorization'] = 'Bearer $token';
+
+    final userUpdate = user.copyWith(
       email: _mailController.text.trim(),
       phone: _phoneController.text,
     );
-    try{
-      final response = await http.put(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(updateUser.toJson(
-          password: _newPasswordController.text.isNotEmpty ? _newPasswordController.text : null,
-        )),
+    request.fields['user_update'] = jsonEncode(userUpdate.toJson(
+      password: _newPasswordController.text.isNotEmpty ? _newPasswordController.text : null,
+    ));
+
+    if(_selectedImage != null) {
+      final fileStream = http.ByteStream(_selectedImage!.openRead());
+      final length = await _selectedImage!.length();
+      final multipartFile = http.MultipartFile(
+        'avatar',
+        fileStream,
+        length,
+        filename: _selectedImage!.path.split('/').last,
       );
-      if(response.statusCode == 200){
-        await _changeEditingState(false);
-      }else{
-        final error = jsonDecode(response.body);
-        if(error['detail'] == 'Email already registered'){
-          SnackbarHelper.showMessage(context, 'Данный email уже занят', isSuccess: false);
-          _loadFields(user);
-        }
-      }
-    }catch (e){
-      SnackbarHelper.showMessage(context, 'Извините, произошла ошибка сети', isSuccess: false);
+      request.files.add(multipartFile);
     }
+
+    print(request.fields);
+
+    final response = await request.send();
+
+    var responseData = await response.stream.bytesToString();
+
+    if(response.statusCode == 200) {
+      await _changeEditingState(false);
+    }else {
+      final error = jsonDecode(responseData);
+      if(error['detail'] == 'Email already registered') {
+        SnackbarHelper.showMessage(context, 'Данный email уже занят', isSuccess: false);
+        _loadFields(user);
+      }
+    }
+
+    // final url = Uri.parse('$baseUrl/users/${user.id}');
+    // final updateUser = user.copyWith(
+    //   email: _mailController.text.trim(),
+    //   phone: _phoneController.text,
+    // );
+    // try{
+    //   final response = await http.put(
+    //     url,
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: jsonEncode(updateUser.toJson(
+    //       password: _newPasswordController.text.isNotEmpty ? _newPasswordController.text : null,
+    //     )),
+    //   );
+    //   if(response.statusCode == 200){
+    //     await _changeEditingState(false);
+    //   }else{
+    //     final error = jsonDecode(response.body);
+    //     if(error['detail'] == 'Email already registered'){
+    //       SnackbarHelper.showMessage(context, 'Данный email уже занят', isSuccess: false);
+    //       _loadFields(user);
+    //     }
+    //   }
+    // }catch (e){
+    //   SnackbarHelper.showMessage(context, 'Извините, произошла ошибка сети', isSuccess: false);
+    // }
+  }
+
+  Future<void> _pickImage() async {
+    // if(await Permission.photos.request().isGranted) {
+    //   final picker = ImagePicker();
+    //   final pickedFile = await picker.pickImage(
+    //     source: ImageSource.gallery,
+    //   );
+
+    //   if(pickedFile != null) {
+    //     setState(() {
+    //       _selectedImage = File(pickedFile.path);
+    //     });
+    //   }
+    // }else {
+    //   SnackbarHelper.showMessage(context, 'Необходимо разрешение для доступа к галерее', isSuccess: false);
+    // }
+    final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+      );
+
+      if(pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+        });
+      }
   }
 
 
@@ -142,7 +215,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
   Future<void> _loadUser() async{
-    final storage = FlutterSecureStorage();
     final token = await storage.read(key: "token");
     if(token != null){
       final url = Uri.parse('$baseUrl/auth/current_user');
@@ -211,13 +283,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        // Container(
-                        //   decoration: BoxDecoration(
-                        //     color: Colors.purpleAccent.withOpacity(0.2),
-                        //     shape: BoxShape.circle,
-                        //   ),
-                        //   child: const BackButton(color: Colors.purpleAccent),
-                        // ),
                         if(_isEditing)
                         Container(
                           decoration: BoxDecoration(
@@ -265,7 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                 }),
                                 _social(Icons.mail, _mailController),
                                 _social(EvaIcons.phone, _phoneController),
-                                _social(Icons.password, _passwordController, isPassword: true),
+                                _social(Icons.password, _passwordController, isPassword: true, hasPassword: true),
                               ],
                             ),
                           ),
@@ -379,24 +444,54 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   }
 
     Widget _buildAvatar() {
-    if (avatar == null || avatar!.isEmpty) {
-      return CircleAvatar(
-        radius: 55,
-        backgroundColor: Colors.grey[300],
-        child: Icon(
-          Icons.person,
-          size: 55,
-          color: Colors.white,
-        ),
-      );
-    }
+      return Stack(
+      alignment: Alignment.center,
+      children: [
+        _selectedImage != null
+          ? CircleAvatar(
+            radius: 55,
+            backgroundImage: FileImage(_selectedImage!),
+          )
+          : avatar != null
+            ? CircleAvatar(
+              radius: 55,
+              backgroundImage: NetworkImage('$baseUrl$avatar'),
+              onBackgroundImageError: (exception, stackTrace) {
 
-    return CircleAvatar(
-      radius: 55,
-      backgroundImage: NetworkImage('$baseUrl/avatars/${avatar!}'),
-      onBackgroundImageError: (exception, stackTrace) {
-        //error
-      },
+              },
+            )
+            : CircleAvatar(
+              radius: 55,
+              backgroundColor: Colors.grey[300],
+              child: const Icon(
+                Icons.person,
+                size: 55,
+                color: Colors.white,
+              ),
+            ),
+        if (_isEditing)
+          Container(
+            width: 110,
+            height: 110,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              shape: BoxShape.circle,
+            ),
+          ),
+
+        if (_isEditing)
+          GestureDetector(
+            onTap: () {
+              _pickImage();
+              // print("Vibor");
+            },
+            child: Icon(
+              Icons.photo_camera,
+              color: Colors.white,
+              size: 30,
+            ),
+          ),
+      ],
     );
   }
 
@@ -592,6 +687,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                           ),
                                           child: isAuthorized
                                               ? TextField(
+                                                  inputFormatters: [
+                                                    if (icon == EvaIcons.phone) phoneMask
+                                                  ],
+                                                  onTap: () {
+                                                    if(icon == EvaIcons.phone && !_phoneController.text.startsWith('+7')) {
+                                                      _phoneController.text = '+7';
+                                                    }
+                                                  },
                                                   controller: _controller,
                                                   style: _textStyle,
                                                   decoration: const InputDecoration(

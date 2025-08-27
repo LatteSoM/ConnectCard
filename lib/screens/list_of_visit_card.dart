@@ -227,11 +227,11 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                         child: IconButton(
                           icon: const Icon(Icons.add, color: Colors.white),
                           onPressed: () {
-                            // Navigator.push(context, MaterialPageRoute(builder: (context) => VisitCardProfile()))
-                            // .then((_){
-                            //   if(mounted) _loadCards();
-                            // });
-                            Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => VisitCardDesigner()));
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => VisitCardProfile()))
+                            .then((_){
+                              if(mounted) _loadCards();
+                            });
+                            // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => VisitCardDesigner()));
                           },
                         ),
                       ),
