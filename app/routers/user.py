@@ -1,9 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+import json
+import os
+import shutil
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from sqlmodel import Session, select
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from app.auth.utils import hash_email
+from app.config.config import AVATAR_DIR
 from ..database import get_session
 from ..models.models import User, Card, ContactInfo, LinkWidget, CardContactInfo, CardLinkWidget, Analytics, AuditLog
 from pydantic import BaseModel, EmailStr
@@ -143,7 +147,8 @@ async def read_user(
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(
     user_id: UUID,
-    user: UserUpdate,
+    avatar: Optional[UploadFile] = File(None),
+    user_update: str = Form(None),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):  
@@ -152,6 +157,12 @@ def update_user(
     db_user = session.exec(select(User).where(User.id == user_id)).first()
     if db_user is None:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
+    
+    user_data = {}
+    if user_update:
+        user_data = json.loads(user_update)
+
+    user = UserUpdate(**user_data) if user_data else UserUpdate()
     
     # email_hash = hash_email(user.email)
     # if session.exec(select(User).where(User.email_hash == email_hash)).first():
@@ -173,6 +184,16 @@ def update_user(
     if user.login != decrypt_data(db_user.login):
         if session.exec(select(User).where(User.login == user.login)).first():
             raise HTTPException(status_code=400, detail="Логин уже занят")
+        
+    if avatar:
+        file_extension = os.path.splitext(avatar.filename)[1]
+        filename = f"{user_id}{file_extension}"
+        file_path = os.path.join(AVATAR_DIR, filename)
+
+        with open(file_path, 'wb') as buffer:
+            shutil.copyfileobj(avatar.file, buffer)
+
+        user.avatar = f"/avatars/{filename}"
     
     # Обновление полей пользователя
     update_data = user.model_dump(exclude={'password'})
