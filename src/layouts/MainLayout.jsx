@@ -9,7 +9,7 @@ const { Content } = Layout;
 const MainLayout = () => {
   return (
     <Layout>
-      <Content style={{ padding: '0 15px' }}>
+      <Content style={{ padding: '0 15px', marginBottom: '50px' }}>
         <Breadcrumbs />
 
         <Outlet />
