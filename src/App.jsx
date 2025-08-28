@@ -43,6 +43,8 @@ const App = () => {
           <Route path="/profile" element={<CurrentUserProfile />} />
           <Route path="/stat" element={<StatScreen />} />
           <Route path="/settings" element={<SettingsScreen />} />
+          <Route path="/list_of_visit_cards" element={<VisitCardsList />} />
+
           {/* <Route path="/profile" element={<ProfileScreen />} /> */}
           <Route path="*" element={<NotFound />} />
         </Route>
@@ -50,7 +52,6 @@ const App = () => {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/card_profile" element={<VisitCardProfile />} />
         <Route path="/designer/:id" element={<VisitCardDesigner />} />
-        <Route path="/list_of_visit_cards" element={<VisitCardsList />} />
         {/* <Route path="/login" element={<LoginScreen />} /> */}
         <Route path="/registration" element={<Registration />} />
         {/* <Route path="/register" element={<RegistrationScreen />} /> */}
