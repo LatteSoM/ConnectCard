@@ -156,7 +156,7 @@ class _ListOfContactsState extends State<ListOfContacts> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: IconButton(
-                          icon: const Icon(Icons.qr_code, color: Colors.white),
+                          icon: const Icon(Bootstrap.person_bounding_box, color: Colors.white),
                           onPressed: () {
                             // Navigator.push(context, MaterialPageRoute(builder: (context) => QRScanScreen()));
                             Navigator.push(context, MaterialPageRoute(builder: (context) => FriendCardProfile()));

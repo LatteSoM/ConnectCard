@@ -15,7 +15,7 @@ dependencies:
   flutter_dotenv: ^5.1.0
   icons_plus: 5.0.0
   flutter_secure_storage: ^9.2.4
-  bottom_navy_bar: ^6.1.0
+  # bottom_navy_bar: ^6.1.0
   qr_flutter: ^4.1.0
   share_plus: ^11.0.0
   qr_code_scanner_plus: ^2.0.10+1
@@ -29,6 +29,7 @@ dependencies:
   image_picker: ^1.1.2
   flutter_colorpicker: ^1.1.0
   uuid: ^4.4.2
+  google_nav_bar: ^5.0.7
 
 dev_dependencies:
   flutter_test:

@@ -26,6 +26,7 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
   String? selectedCardId;
   String? _token;
   String? _id;
+  bool _isPremiusUser = false;
   Map<String, String> get headers {
     return {
       'Authorization': 'Bearer $_token',
@@ -43,14 +44,110 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
     _initializeData();
   }
 
+  void _showCustomDialog(BuildContext context) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Закрыть',
+      barrierColor: Colors.black.withOpacity(0.7),
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return ScaleTransition(
+          scale: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutBack,
+          ),
+          child: FadeTransition(
+            opacity: animation,
+            child: AlertDialog(
+              backgroundColor: Colors.grey[900],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 20,
+              title: Text(
+                'Куда перейти?',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDialogButton(
+                    context,
+                    Icons.dashboard,
+                    'Обычное',
+                    Colors.blueAccent,
+                    () {
+                      Navigator.pop(context);
+                      Navigator.push(context, 
+                        MaterialPageRoute(builder: (_) => VisitCardProfile()));
+                    },
+                  ),
+                  SizedBox(height: 12),
+                  _buildDialogButton(
+                    context,
+                    isActive: _isPremiusUser,
+                    isPremium: !_isPremiusUser,
+                    Icons.view_quilt,
+                    'Дизайнер',
+                    Colors.purpleAccent,
+                    () {
+                      Navigator.pop(context);
+                      Navigator.push(context, 
+                        MaterialPageRoute(builder: (_) => VisitCardDesigner()));
+                    },
+                  ),
+                  SizedBox(height: 16),
+                  Divider(color: Colors.grey[700], height: 1),
+                  SizedBox(height: 12),
+                  _buildCancelButton(context),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _initializeData() async{
     await _loadCredentials();
+    await _checkPremium(); //Надо будет переделать
     await _loadCards();
   }
 
   Future<void> _loadCredentials() async {
     _id = await storage.read(key: 'id');
     _token = await storage.read(key: 'token');
+  }
+
+  //Временное решение
+  Future<void> _checkPremium() async {
+    final url = Uri.parse('$baseUrl/auth/current_user');
+    try{
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $_token',
+        }
+      );
+      if(response.statusCode == 200){
+        final data = jsonDecode(response.body);
+        final user = User.fromJson(data);
+        _isPremiusUser = user.isPremiumUser;
+
+      }else{
+        SnackbarHelper.showMessage(context, 'Извините, произошла ошибка');
+      }
+    }catch (e){
+      print(e);
+      SnackbarHelper.showMessage(context, 'Произошла ошибка сети $e', isSuccess: false);
+    }
   }
 
   Future<void> _loadCards() async { 
@@ -227,10 +324,11 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                         child: IconButton(
                           icon: const Icon(Icons.add, color: Colors.white),
                           onPressed: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => VisitCardProfile()))
-                            .then((_){
-                              if(mounted) _loadCards();
-                            });
+                            _showCustomDialog(context);
+                            // Navigator.push(context, MaterialPageRoute(builder: (context) => VisitCardProfile()))
+                            // .then((_){
+                            //   if(mounted) _loadCards();
+                            // });
                             // Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => VisitCardDesigner()));
                           },
                         ),
@@ -330,6 +428,97 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                   ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildDialogButton(BuildContext context, IconData icon, 
+                          String text, Color color, VoidCallback onTap,
+                          {bool isActive = true, bool isPremium = false}) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      onTap: isActive ? onTap : null,
+      borderRadius: BorderRadius.circular(12),
+      child: Opacity(
+        opacity: isActive ? 1.0 : 0.5,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          decoration: BoxDecoration(
+            color: color.withOpacity(isActive ? 0.1 : 0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: color.withOpacity(isActive ? 0.3 : 0.1),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, 
+                  color: color.withOpacity(isActive ? 1.0 : 0.5), 
+                  size: 24),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          text,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(isActive ? 1.0 : 0.6),
+                            fontSize: 16,
+                            fontWeight: isActive ? FontWeight.w500 : FontWeight.w400,
+                          ),
+                        ),
+                        if (isPremium) ...[
+                          const SizedBox(width: 8),
+                          Icon(BoxIcons.bx_crown, 
+                              size: 18, 
+                              color: Colors.amberAccent.withOpacity(0.8))
+                        ]
+                      ],
+                    ),
+                    if (isPremium && !isActive)
+                      Text(
+                        'Только для Premium',
+                        style: TextStyle(
+                          color: Colors.amberAccent.withOpacity(0.7),
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, 
+                  color: color.withOpacity(isActive ? 0.7 : 0.3), 
+                  size: 16),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+
+// Кнопка отмены
+  Widget _buildCancelButton(BuildContext context) {
+    return TextButton(
+      onPressed: () {
+        Navigator.pop(context);
+      },
+      style: TextButton.styleFrom(
+        foregroundColor: Colors.grey[400],
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+      ),
+      child: Text(
+        'Отмена',
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.grey[400],
+        ),
       ),
     );
   }

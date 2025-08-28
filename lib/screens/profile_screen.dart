@@ -52,6 +52,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   final TextEditingController _newPasswordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
+  final TextEditingController _nameController = TextEditingController();
+
   final phoneMask = MaskTextInputFormatter(mask: '+7 (###) ###-##-##');
 
   File? _selectedImage;
@@ -110,6 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     request.headers['Authorization'] = 'Bearer $token';
 
     final userUpdate = user.copyWith(
+      name: _nameController.text.trim() != name ? _nameController.text.trim() : null,
       email: _mailController.text.trim(),
       phone: _phoneController.text,
     );
@@ -210,6 +213,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       _phoneController.text = _initialPhone ?? "Не указан";
       _passwordController.text = user.hasPassword ? "**************" : "Пароль для аккаунта не установлен";
       name = user.name;
+      _nameController.text = name;
       avatar = user.avatar;
     });
   }
@@ -309,7 +313,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       _buildAvatar(),
                       SizedBox(height: 10,),
 
-                      Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28, color: Color(0xFF7C4DFF)),),
+                      // Text(name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28, color: Color(0xFF7C4DFF)),),
+                      _buildEditableName(),
 
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -441,6 +446,61 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         ],
       ),
     );
+  }
+
+  Widget _buildEditableName() {
+    return _isEditing
+        ? Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  constraints: const BoxConstraints(
+                    minWidth: 50,
+                    maxWidth: 200,
+                  ),
+                  child: TextFormField(
+                    controller: _nameController,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
+                      color: Color(0xFF7C4DFF),
+                    ),
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.only(bottom: 4),
+                      border: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      isCollapsed: true,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.edit,
+                  color: Color(0xFF7C4DFF),
+                  size: 20,
+                ),
+              ],
+            ),
+          )
+        : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              name,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 28,
+                color: Color(0xFF7C4DFF),
+              ),
+            ),
+          );
   }
 
     Widget _buildAvatar() {
@@ -690,7 +750,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                                   inputFormatters: [
                                                     if (icon == EvaIcons.phone) phoneMask
                                                   ],
-                                                  onTap: () {
+                                                  onChanged: (value) {
                                                     if(icon == EvaIcons.phone && !_phoneController.text.startsWith('+7')) {
                                                       _phoneController.text = '+7';
                                                     }

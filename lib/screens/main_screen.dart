@@ -1,9 +1,10 @@
-import 'package:bottom_navy_bar/bottom_navy_bar.dart';
 import 'package:connect_card/screens/list_of_contacts.dart';
 import 'package:connect_card/screens/list_of_visit_card.dart';
 import 'package:connect_card/screens/profile_screen.dart';
 import 'package:connect_card/screens/stat_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 
@@ -138,35 +139,87 @@ void _checkAndShowTutorial() async {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavyBar(
-        backgroundColor: Colors.black,
-        selectedIndex: _currentIndex,
-        showElevation: true,
-        itemCornerRadius: 24,
-        containerHeight: 50,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        onItemSelected: (index) => setState(() => _currentIndex = index),
-        items: [
-          _buildNavyBarItem(Icons.home, 'Главная', keyContacts),
-          _buildNavyBarItem(Icons.visibility, 'Визитки', keyVisitCards),
-          _buildNavyBarItem(Icons.person, 'Профиль', keyProfile),
-          _buildNavyBarItem(Icons.analytics, 'Аналитика', keyStats),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.black,
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 20,
+              color: const Color.fromARGB(255, 255, 9, 9).withOpacity(.1),
+            )
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8),
+            child: GNav(
+              gap: 8,
+              activeColor: Colors.purpleAccent,
+              iconSize: 24,
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+              duration: Duration(milliseconds: 400),
+              color: Colors.white,
+              tabs: [
+                GButton(
+                  key: keyContacts,
+                  icon: Bootstrap.person_arms_up,
+                  text: 'Контакты',
+                ),
+                GButton(
+                  key: keyVisitCards,
+                  icon: Bootstrap.person_vcard,
+                  text: 'Визитки',
+                ),
+                GButton(
+                  key: keyProfile,
+                  icon: OctIcons.home,
+                  text: 'Профиль',
+                ),
+                GButton(
+                  key: keyStats,
+                  icon: FontAwesome.chart_line_solid,
+                  text: 'Аналитика',
+                ),
+              ],
+              selectedIndex: _currentIndex,
+              onTabChange: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
+          ),
+        ),
       ),
+      // bottomNavigationBar: BottomNavyBar(
+      //   backgroundColor: Colors.black,
+      //   selectedIndex: _currentIndex,
+      //   showElevation: true,
+      //   itemCornerRadius: 24,
+      //   containerHeight: 50,
+      //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      //   onItemSelected: (index) => setState(() => _currentIndex = index),
+      //   items: [
+      //     _buildNavyBarItem(Icons.home, 'Главная', keyContacts),
+      //     _buildNavyBarItem(Bootstrap.card_heading, 'Визитки', keyVisitCards),
+      //     _buildNavyBarItem(Icons.person, 'Профиль', keyProfile),
+      //     _buildNavyBarItem(Icons.analytics, 'Аналитика', keyStats),
+      //   ],
+      // ),
     );
   }
 
-  BottomNavyBarItem _buildNavyBarItem(IconData icon, String title, Key key) {
-    return BottomNavyBarItem(
-      icon: Container(
-        key: key,
-        child: Icon(icon),
-      ),
-      title: Text(title),
-      activeColor: Colors.white,
-      inactiveColor: Colors.grey,
-      textAlign: TextAlign.center,
-    );
-  }
+  // BottomNavyBarItem _buildNavyBarItem(IconData icon, String title, Key key) {
+  //   return BottomNavyBarItem(
+  //     icon: Container(
+  //       key: key,
+  //       child: Icon(icon),
+  //     ),
+  //     title: Text(title),
+  //     activeColor: Colors.white,
+  //     inactiveColor: Colors.grey,
+  //     textAlign: TextAlign.center,
+  //   );
+  // }
 }
 
