@@ -91,8 +91,10 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                   SizedBox(height: 12),
                   _buildDialogButton(
                     context,
-                    isActive: _isPremiusUser,
-                    isPremium: !_isPremiusUser,
+                    // isActive: _isPremiusUser,
+                    // isPremium: !_isPremiusUser,
+                    isActive: true,
+                    isPremium: false,
                     Icons.view_quilt,
                     'Дизайнер',
                     Colors.purpleAccent,
@@ -603,10 +605,10 @@ class _VisitCardState extends State<VisitCard> with SingleTickerProviderStateMix
   // Порядок приоритета для отображения соцсетей
   static const List<String> _prioritySocials = [
     'telegram',
-    'instagram',
-    'twitter',
     'github',
     'linkedin',
+    'instagram',
+    'twitter',
   ];
 
   // Маппинг названий соцсетей на иконки
@@ -697,7 +699,7 @@ class _VisitCardState extends State<VisitCard> with SingleTickerProviderStateMix
                           orElse: () => _socialIcons.entries.first
                         ).value;
                         
-                        return _SocialLinkWidget(
+                        return SocialLinkWidget(
                           icon: icon,
                           link: link.link,
                         );
@@ -791,11 +793,11 @@ class _VisitCardState extends State<VisitCard> with SingleTickerProviderStateMix
   }
 }
 
-class _SocialLinkWidget extends StatelessWidget {
+class SocialLinkWidget extends StatelessWidget {
   final IconData icon;
   final String link;
 
-  const _SocialLinkWidget({
+  const SocialLinkWidget({
     required this.icon,
     required this.link,
   });

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:connect_card/models/user_model.dart';
+import 'package:connect_card/screens/list_of_visit_card.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -11,6 +12,15 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+
+enum VisitCardTemplate {
+  template1,
+  template2,
+  template3,
+  template4,
+}
+
 
 class VisitCardProfile extends StatefulWidget{
   @override
@@ -41,6 +51,12 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
   final phoneMask = MaskTextInputFormatter(mask: '+7 (###) ###-##-##');
 
   File? _selectedImage;
+  String? avatar;
+
+  VisitCardTemplate? _selectedCardTemplate;
+  List<LinkWidget> linkWidgets = [];
+
+  
 
   @override
   void initState() {
@@ -81,6 +97,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
           _nameController.text = user.name;
           contactInfo.email = user.email;
           contactInfo.phone = user.phone;
+          avatar = user.avatar;
         });
       }else{
         SnackbarHelper.showMessage(context, 'Извините, произошла ошибка', isSuccess: false);  
@@ -230,10 +247,22 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
   void _removeSocialMedia(String type) {
     setState(() {
       switch (type) {
-        case 'telegram': socialMedia.telegram = null; break;
-        case 'linkedin': socialMedia.linkedin = null; break;
-        case 'github': socialMedia.github = null; break;
-        case 'twitter': socialMedia.twitter = null; break;
+        case 'telegram':
+          socialMedia.telegram = null;
+          linkWidgets.removeWhere((item) => item.name == 'Telegram');
+          break;
+        case 'linkedin':
+          socialMedia.linkedin = null;
+          linkWidgets.removeWhere((item) => item.name == 'Linkedin');
+          break;
+        case 'github':
+          socialMedia.github = null;
+          linkWidgets.removeWhere((item) => item.name == 'Github');
+          break;
+        case 'twitter':
+          socialMedia.twitter = null;
+          linkWidgets.removeWhere((item) => item.name == 'Twitter');
+          break;
       }
     });
   }
@@ -262,9 +291,31 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
           case 'github': socialMedia.github = _socialMediaController.text; break;
           case 'twitter': socialMedia.twitter = _socialMediaController.text; break;
         }
+        _convertSocialToLinkWidget();
         _socialMediaController.clear();
         _showAddSocialMedia = false;
         _selectedSocialMediaType = null;
+      });
+    }
+  }
+
+  void _convertSocialToLinkWidget() {
+    final socialNames = {
+      'telegram': 'Telegram',
+      'linkedin': 'Linkedin',
+      'github': 'GitHub',
+      'twitter': 'Twitter',
+    };
+
+    final name = socialNames[_selectedSocialMediaType];
+    if (name != null) {
+      setState(() {
+        linkWidgets.add(LinkWidget(
+          id: '',
+          link: _socialMediaController.text,
+          name: name,
+          icon: _selectedSocialMediaType,
+        ));
       });
     }
   }
@@ -360,31 +411,24 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                     ),
                     Row(
                       children: [
-                        if(_isEditing)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _isEditing = false;
-                              });
-                            },
-                            icon: Icon(Icons.close, color: Colors.red,),
-                          ),
-                        ),
                         IconButton(
                           onPressed: (){
                             setState(() {
-                              if(_isEditing){
-                                _saveData();
-                                _isEditing = false;
-                              }else{
-                                _isEditing = true;
-                              }
+                              _isEditing = !_isEditing;
                             });
                           }, 
-                          icon: _isEditing ? Icon(Bootstrap.check_lg) : Icon(Icons.edit)
+                          icon: _isEditing ? Icon(Icons.close, color: Colors.red) : Icon(Icons.edit),
                         ),
+                        if(!_isEditing)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: IconButton(
+                              onPressed: () {
+                                _saveData();
+                              },
+                              icon: Icon(Bootstrap.check_lg, color: Colors.green,),
+                            ),
+                          ),
                       ],
                     )
                   ],
@@ -556,9 +600,159 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                       controller: _socialMediaController,
                     ),
                   ),
+
+                  const SizedBox(height: 16,),
+
+                  //Шаблоны
+                  if(!_isEditing) ...[
+                    const Text(
+                    'Предпросмотр вашей визитки',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                    const SizedBox(height: 16,),
+
+                    _selectedCardTemplate == null
+                    ? Center(
+                        child: Opacity(
+                          opacity: 0.2,
+                          child: Icon(
+                            Icons.credit_card,
+                            size: MediaQuery.of(context).size.width * 0.45,
+                            color: Colors.grey.shade400,
+                          ),
+                        )
+                      )
+                      : VisitCard1(
+                          fullName: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : 'Иван Иванов',
+                          position: _positionController.text.trim().isNotEmpty ? _positionController.text.trim() : 'Менеджер',
+                          company: _companyController.text.trim().isNotEmpty ? _companyController.text.trim() : 'Компания X',
+                          socialLinks: linkWidgets,
+                          template: _selectedCardTemplate!,
+                          avatar: avatar,
+                          selectedImage: _selectedImage,
+                        ),
+
+                    const SizedBox(height: 12,),
+                      
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final selected = await showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (context) {
+                              return DraggableScrollableSheet(
+                                initialChildSize: 0.5,
+                                minChildSize: 0.5,
+                                maxChildSize: 0.9,
+                                expand: false,
+                                builder: (context, scrollController) {
+                                  return Container(
+                                    decoration: const BoxDecoration(
+                                      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Expanded(
+                                          child: ListView(
+                                            controller: scrollController,
+                                            padding: const EdgeInsets.all(16),
+                                            children: [
+                                              GestureDetector(
+                                                onTap: () => Navigator.pop(context, VisitCardTemplate.template1),
+                                                child: VisitCard1(
+                                                  fullName: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : "Иван Иванов",
+                                                  position: _positionController.text.trim().isNotEmpty ? _positionController.text.trim() : "Менеджер",
+                                                  company: _companyController.text.trim().isNotEmpty ? _companyController.text.trim() : "Компания X",
+                                                  template: VisitCardTemplate.template1,
+                                                  socialLinks: linkWidgets,
+                                                  avatar: avatar,
+                                                  selectedImage: _selectedImage,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              GestureDetector(
+                                                onTap: () => Navigator.pop(context, VisitCardTemplate.template2),
+                                                child: VisitCard1(
+                                                  fullName: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : "Иван Иванов",
+                                                  position: _positionController.text.trim().isNotEmpty ? _positionController.text.trim() : "Менеджер",
+                                                  company: _companyController.text.trim().isNotEmpty ? _companyController.text.trim() : "Компания X",
+                                                  template: VisitCardTemplate.template2,
+                                                  socialLinks: linkWidgets,
+                                                  avatar: avatar,
+                                                  selectedImage: _selectedImage,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              GestureDetector(
+                                                onTap: () => Navigator.pop(context, VisitCardTemplate.template3),
+                                                child: VisitCard1(
+                                                  fullName: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : "Иван Иванов",
+                                                  position: _positionController.text.trim().isNotEmpty ? _positionController.text.trim() : "Менеджер",
+                                                  company: _companyController.text.trim().isNotEmpty ? _companyController.text.trim() : "Компания X",
+                                                  template: VisitCardTemplate.template3,
+                                                  socialLinks: linkWidgets,
+                                                  avatar: avatar,
+                                                  selectedImage: _selectedImage,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 16),
+                                              GestureDetector(
+                                                onTap: () => Navigator.pop(context, VisitCardTemplate.template4),
+                                                child: VisitCard1(
+                                                  fullName: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : "Иван Иванов",
+                                                  position: _positionController.text.trim().isNotEmpty ? _positionController.text.trim() : "Менеджер",
+                                                  company: _companyController.text.trim().isNotEmpty ? _companyController.text.trim() : "Компания X",
+                                                  template: VisitCardTemplate.template4,
+                                                  socialLinks: linkWidgets,
+                                                  avatar: avatar,
+                                                  selectedImage: _selectedImage,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          );
+                          if (selected != null) {
+                            setState(() {
+                              _selectedCardTemplate = selected;
+                            });
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1C1A1F),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.photo_library, color: Colors.white, size: 16),
+                            SizedBox(width: 8),
+                            Text(
+                              'Выбор шаблона визитки',
+                              style: TextStyle(color: Colors.white, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
-            )
+            ),
           ),
         ),
       ),
@@ -634,24 +828,31 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
       alignment: Alignment.center,
       children: [
         _selectedImage != null
-        ? CircleAvatar(
-          radius: 48,
-          backgroundImage: FileImage(_selectedImage!),
-        )
-        : CircleAvatar(
-            radius: 48,
-            backgroundColor: Colors.grey[300],
-            child: Icon(
-              Icons.person,
-              size: 48,
-              color: Colors.white,
-            ),
-          ),
+          ? CircleAvatar(
+            radius: 55,
+            backgroundImage: FileImage(_selectedImage!),
+          )
+          : avatar != null
+            ? CircleAvatar(
+              radius: 55,
+              backgroundImage: NetworkImage('$baseUrl$avatar'),
+              onBackgroundImageError: (exception, stackTrace) {
 
+              },
+            )
+            : CircleAvatar(
+              radius: 55,
+              backgroundColor: Colors.grey[300],
+              child: const Icon(
+                Icons.person,
+                size: 55,
+                color: Colors.white,
+              ),
+            ),
         if (_isEditing)
           Container(
-            width: 96,
-            height: 96,
+            width: 110,
+            height: 110,
             decoration: BoxDecoration(
               color: Colors.black.withOpacity(0.5),
               shape: BoxShape.circle,
@@ -662,11 +863,12 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
           GestureDetector(
             onTap: () {
               _pickImage();
+              // print("Vibor");
             },
             child: Icon(
               Icons.photo_camera,
               color: Colors.white,
-              size: 28,
+              size: 30,
             ),
           ),
       ],
@@ -1026,3 +1228,484 @@ class SocialMedia {
     return widgets;
   }
 }
+
+class VisitCard1 extends StatefulWidget {
+  final String fullName;
+  final String position;
+  final String company;
+  final List<LinkWidget> socialLinks;
+  final double avatarRadius;
+  final String? avatar;
+  final Color cardColor;
+  final Color? placeholderColor;
+  final VisitCardTemplate template;
+  final File? selectedImage;
+
+  VisitCard1({
+    Key? key,
+    required this.fullName,
+    required this.position,
+    required this.company,
+    required this.socialLinks,
+    this.avatarRadius = 48.0,
+    this.avatar,
+    this.cardColor = const Color.fromARGB(255, 0, 0, 0),
+    this.placeholderColor,
+    this.template = VisitCardTemplate.template1,
+    this.selectedImage,
+  }) : super(key: key);
+
+  @override
+  State<VisitCard1> createState() => _VisitCard1State();
+}
+
+class _VisitCard1State extends State<VisitCard1> {
+  final baseUrl = dotenv.env['BASE_URL'];
+
+  // Порядок приоритета для отображения соцсетей
+  static const List<String> _prioritySocials = [
+    'telegram',
+    'github',
+    'linkedin',
+    'instagram',
+    'twitter',
+  ];
+
+  // Маппинг названий соцсетей на иконки
+  static const Map<String, IconData> _socialIcons = {
+    'twitter': Bootstrap.twitter_x,
+    'telegram': Bootstrap.telegram,
+    'instagram': Bootstrap.instagram,
+    'github': Bootstrap.github,
+    'linkedin': Bootstrap.linkedin,
+  };
+
+  // Отфильтрованные и отсортированные по приоритету социальные ссылки
+  List<LinkWidget> get _topSocialLinks {
+    final filtered = widget.socialLinks.where((link) => 
+      _prioritySocials.any((social) => 
+        link.name.toLowerCase().contains(social))
+    ).toList();
+
+    filtered.sort((a, b) {
+      final aIndex = _prioritySocials.indexWhere((social) => 
+        a.name.toLowerCase().contains(social));
+      final bIndex = _prioritySocials.indexWhere((social) => 
+        b.name.toLowerCase().contains(social));
+      return aIndex.compareTo(bIndex);
+    });
+
+    return filtered.take(3).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      widthFactor: 0.9, // одинаковая ширина
+      child: AspectRatio(
+        aspectRatio: 1.6, // фиксированное соотношение сторон
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: widget.cardColor,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: _buildTemplate(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTemplate(BuildContext context) {
+    switch (widget.template) {
+      case VisitCardTemplate.template1:
+        return _buildTemplate1(context);
+      case VisitCardTemplate.template2:
+        return _buildTemplate2(context);
+      case VisitCardTemplate.template3:
+        return _buildTemplate3(context);
+      case VisitCardTemplate.template4:
+        return _buildTemplate4(context);
+    }
+  }
+
+  // ---------------- Шаблон 1 ----------------
+  Widget _buildTemplate1(BuildContext context) {
+    final topLinks = _topSocialLinks;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Row(
+          children: [
+            // Левая часть (аватар + соцсети)
+            SizedBox(
+              width: constraints.maxWidth * 0.4,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildAvatar(),
+                  const SizedBox(height: 15),
+                  ...topLinks.map((link) {
+                    final icon = _socialIcons.entries.firstWhere(
+                      (entry) => link.name.toLowerCase().contains(entry.key),
+                      orElse: () => _socialIcons.entries.first,
+                    ).value;
+                    return SocialLinkWidget(icon: icon, link: link.link);
+                  }),
+                ],
+              ),
+            ),
+
+            // Правая часть (текст + QR)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(widget.fullName,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(widget.position,
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w300)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(FontAwesome.building,
+                            size: 20, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(widget.company,
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w300)),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    QrImageView(
+                      data: 'https://example.com/qr',
+                      version: QrVersions.auto,
+                      size: 80,
+                      gapless: false,
+                      backgroundColor: Colors.white,
+                      embeddedImage:
+                          const AssetImage('assets/icons/LogoNight.png'),
+                      embeddedImageStyle:
+                          const QrEmbeddedImageStyle(size: Size(32, 19)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------- Шаблон 2 ----------------
+  Widget _buildTemplate2(BuildContext context) {
+    final topLinks = _topSocialLinks;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Row(
+          children: [
+            //Левая часть (текст + QR)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(left: 20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(widget.fullName,
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text(widget.position,
+                        style: const TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w300)),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(FontAwesome.building,
+                            size: 20, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(widget.company,
+                            style: const TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.w300)),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    QrImageView(
+                      data: 'https://example.com/qr',
+                      version: QrVersions.auto,
+                      size: 80,
+                      gapless: false,
+                      backgroundColor: Colors.white,
+                      embeddedImage:
+                          const AssetImage('assets/icons/LogoNight.png'),
+                      embeddedImageStyle:
+                          const QrEmbeddedImageStyle(size: Size(32, 19)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Правая часть (аватар + соцсети)
+            SizedBox(
+              width: constraints.maxWidth * 0.4,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildAvatar(),
+                  const SizedBox(height: 15),
+                  ...topLinks.map((link) {
+                    final icon = _socialIcons.entries.firstWhere(
+                      (entry) => link.name.toLowerCase().contains(entry.key),
+                      orElse: () => _socialIcons.entries.first,
+                    ).value;
+                    return SocialLinkWidget(icon: icon, link: link.link);
+                  }),
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------- Шаблон 3 ----------------
+  Widget _buildTemplate3(BuildContext context) {
+    final topLinks = _topSocialLinks;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.fullName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    widget.position,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w300,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        FontAwesome.building,
+                        size: 20,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.company,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w300,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            //Ссылка в правом нижнем углу
+            if(topLinks.isNotEmpty)
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _socialIcons[topLinks[0].icon]!,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      topLinks[0].link,
+                      style: const TextStyle(fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  // ---------------- Шаблон 4 ----------------
+  Widget _buildTemplate4(BuildContext context) {
+  final topLinks = _topSocialLinks;
+
+  return Center(
+    child: IntrinsicHeight(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch, // чтобы Divider тянулся
+        children: [
+          // Имя
+          Align(
+            alignment: Alignment.center,
+            child: _buildNameWithLineBreak(widget.fullName),
+          ),
+          const SizedBox(width: 10),
+
+          // Divider автоматически подстроится под высоту
+          VerticalDivider(
+            color: Colors.white,
+            thickness: 2,
+            width: 2,
+          ),
+          const SizedBox(width: 10),
+
+          // Список ссылок
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: topLinks.map((link) {
+              final icon = _socialIcons.entries.firstWhere(
+                (entry) => link.name.toLowerCase().contains(entry.key),
+                orElse: () => _socialIcons.entries.first,
+              ).value;
+
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, size: 14),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          link.link,
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+  Widget _buildAvatar() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        widget.selectedImage != null
+          ? CircleAvatar(
+            radius: 55,
+            backgroundImage: FileImage(widget.selectedImage!),
+          )
+          : widget.avatar != null
+            ? CircleAvatar(
+              radius: 55,
+              backgroundImage: NetworkImage('$baseUrl${widget.avatar}'),
+              onBackgroundImageError: (exception, stackTrace) {
+
+              },
+            )
+            : CircleAvatar(
+              radius: 55,
+              backgroundColor: Colors.grey[300],
+              child: const Icon(
+                Icons.person,
+                size: 55,
+                color: Colors.white,
+              ),
+            ),
+      ],
+    );
+  }
+
+
+  Widget _buildNameWithLineBreak(String fullName) {
+    final trimmedName = fullName.trim();
+    final names = trimmedName.split(' ');
+    
+    if (names.length > 1) {
+      final firstName = names[0];
+      final lastName = names.sublist(1).join(' ');
+      
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 120),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              firstName, 
+              style: TextStyle(
+                fontSize: 18,
+                height: 1,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              lastName, 
+              style: TextStyle(
+                fontSize: 18,
+                height: 1,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+    } else {
+      return ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: 120),
+        child: Text(
+          trimmedName, 
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+  }
+}
+

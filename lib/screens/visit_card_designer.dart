@@ -18,8 +18,9 @@ class VisitCardDesigner extends StatefulWidget {
   State<VisitCardDesigner> createState() => _VisitCardDesignerState();
 }
 
-enum ElementType { text, shape, image, background }
+enum ElementType { text, shape, image, background, link }
 enum ShapeType { square, circle, triangle }
+enum LinkType {email, phone, website, telegram, linkedin, github, twitter }
 const Map<ShapeType, String> shapeLabels = {
   ShapeType.square: "Квадрат",
   ShapeType.circle: "Круг",
@@ -52,6 +53,14 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
     type: ElementType.text,
     matrix: Matrix4.identity()..translate(-18.333328247070312, 3.6666717529296875),
     text: "Info",
+    fontSize: 18,
+    baseFontSize: 18,
+    textColor: Colors.white,
+  ),
+  EditableElement(
+    type: ElementType.link,
+    matrix: Matrix4.identity()..translate(-19.0, -40.0),
+    text: 'https://github.com/',
     fontSize: 18,
     baseFontSize: 18,
     textColor: Colors.white,
@@ -126,6 +135,8 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
         return 'Добавить фигуру';
       case ElementType.image:
         return 'Добавить изображение';
+      case ElementType.link:
+        return 'Добавить ссылку';
       case ElementType.background:
         return 'Изменить задний фон';
       default:
@@ -150,7 +161,6 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
         });
         break;
       case ElementType.shape:
-        print('Добавляем фигуру');
         setState(() {
           elements.add(
             EditableElement(
@@ -165,23 +175,25 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
         });
         break;
       case ElementType.image:
-  print('Добавляем изображение');
-  _pickImage().then((selectedImage) {
-    if (selectedImage != null) {
-      setState(() {
-        elements.add(
-          EditableElement(
-            type: ElementType.image,
-            matrix: Matrix4.identity(),
-            imageProvider: FileImage(selectedImage),
-          ),
-        );
+        _pickImage().then((selectedImage) {
+        if (selectedImage != null) {
+          setState(() {
+            elements.add(
+              EditableElement(
+                type: ElementType.image,
+                matrix: Matrix4.identity(),
+                imageProvider: FileImage(selectedImage),
+              ),
+            );
+          });
+        } else {
+          print("Изображение не выбрано");
+        }
       });
-    } else {
-      print("Изображение не выбрано");
-    }
-  });
-  break;
+      break;
+      case ElementType.link:
+        print('Добавляем ссылку');
+        break;
 
       default:
         print('Элемент не выбран');
@@ -321,6 +333,9 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
       } else if (item.type == ElementType.image) {
         label = 'Изображение';
         icon = Icons.photo;
+      } else if (item.type == ElementType.link) {
+        label = 'Ссылка';
+        icon = Icons.link;
       } else {
         label = "Элемент";
         icon = Icons.extension;
@@ -331,7 +346,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
           setState(() {
             selectedIndex = index;
             selectedElementType = elements[index].type;
-            if(elements[index].type == ElementType.text) {
+            if(elements[index].type == ElementType.text || elements[index].type == ElementType.link) {
               _controller1.text = elements[index].text ?? '';
             }
           });
@@ -480,6 +495,13 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                                 _buildShapeWidthSlider(),
                                 _buildOpacitySlider(),
                                 _buildRotationSlider(),
+                              ] else if (selectedIndex != null && selectedElementType == ElementType.link) ...[
+                                _buildLayerButtons(),
+                                _buildDropDownLink(),
+                                _buildTextFieldWithFontWeight(),
+                                _buildFontFamilyWithColorPicker(),
+                                _buildFontSizeSlider(),
+                                _buildRotationSlider(),
                               ],
                             ],
                           ),
@@ -524,6 +546,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                     _buildBottomBarItem(Icons.text_fields, 'Текст', ElementType.text),
                     _buildBottomBarItem(Icons.crop_square, 'Фигура', ElementType.shape),
                     _buildBottomBarItem(Icons.image, 'Изображение', ElementType.image),
+                    _buildBottomBarItem(Icons.link, 'Ссылка', ElementType.link),
                     _buildBottomBarItem(Icons.format_paint, 'Фон', ElementType.background),
                   ],
                 ),
@@ -549,7 +572,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
         final scaleX = sqrt(pow(newMatrix.storage[0], 2) + pow(newMatrix.storage[1], 2));
         item.scaleFactor = scaleX;
 
-        if (item.type == ElementType.text) {
+        if (item.type == ElementType.text || item.type == ElementType.link) {
           item.fontSize = (item.baseFontSize ?? 18) * item.scaleFactor;
         } else {
           item.width = (item.baseWidth ?? 100) * item.scaleFactor;
@@ -579,7 +602,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
             setState(() {
               selectedIndex = index;
               selectedElementType = item.type;
-              if (item.type == ElementType.text) {
+              if (item.type == ElementType.text || item.type == ElementType.link) {
                 _controller1.text = item.text ?? '';
               }
             });
@@ -645,6 +668,24 @@ Widget _buildElementWidget(EditableElement item, int index) {
 
       ),
     );
+  } else if (item.type == ElementType.link) {
+        return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: selectedIndex == index && selectedElementType == ElementType.link
+            ? Border.all(color: Colors.yellow, width: 2)
+            : null,
+      ),
+      child: Text(
+        item.text ?? '',
+        style: TextStyle(
+          color: item.textColor,
+          fontSize: item.fontSize,
+          fontWeight: item.fontWeight ?? FontWeight.normal,
+          fontFamily: item.fontFamily ?? 'Roboto',
+        ),
+      ),
+    );
   }
   return const SizedBox.shrink();
 }
@@ -707,6 +748,55 @@ Widget _buildOpacitySlider() {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+
+  Widget _buildDropDownLink() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: DropdownButtonFormField(
+        decoration: InputDecoration(
+          labelText: 'Тип ссылки',
+          labelStyle: const TextStyle(color: Colors.white),
+          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          filled: true,
+          fillColor: Colors.grey[800],
+          ),
+          dropdownColor: Colors.grey[800],
+          value: elements[selectedIndex!].fontWeight,
+          items: const [
+            DropdownMenuItem(
+              value: FontWeight.normal,
+              child: Text('Email', style: TextStyle(color: Colors.white))),
+            DropdownMenuItem(
+              value: FontWeight.bold,
+              child: Text('Телефон', style: TextStyle(color: Colors.white))),
+            DropdownMenuItem(
+              value: FontWeight.w300,
+              child: Text('Сайт', style: TextStyle(color: Colors.white))),
+            DropdownMenuItem(
+              value: FontWeight.w300,
+              child: Text('Github', style: TextStyle(color: Colors.white))),
+            DropdownMenuItem(
+              value: FontWeight.w300,
+              child: Text('Telegram', style: TextStyle(color: Colors.white))),
+          ],
+          onChanged: (value) {
+            if (value != null && selectedIndex != null) {
+              setState(() => elements[selectedIndex!].fontWeight = value);
+            }
+          },
+          style: const TextStyle(color: Colors.white),
       ),
     );
   }
