@@ -529,271 +529,271 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
 }
 
 
-class VisitCard extends StatefulWidget {
-  final String fullName;
-  final String position;
-  final String company;
-  final List<LinkWidget> socialLinks;
-  final String qrCodeAssetPath;
-  final double avatarRadius;
-  final String? avatar;
-  final Color cardColor;
-  final bool isSelected;
-  final Color? placeholderColor;
+// class VisitCard extends StatefulWidget {
+//   final String fullName;
+//   final String position;
+//   final String company;
+//   final List<LinkWidget> socialLinks;
+//   final String qrCodeAssetPath;
+//   final double avatarRadius;
+//   final String? avatar;
+//   final Color cardColor;
+//   final bool isSelected;
+//   final Color? placeholderColor;
 
 
-  const VisitCard({
-    Key? key,
-    required this.fullName,
-    required this.position,
-    required this.company,
-    required this.socialLinks,
-    this.isSelected = false,
-    this.qrCodeAssetPath = 'assets/icons/qr_code.png',
-    this.avatarRadius = 48.0,
-    this.avatar,
-    this.cardColor = const Color(0xFF1B1A20),
-    this.placeholderColor,
-  }) : super(key: key);
+//   const VisitCard({
+//     Key? key,
+//     required this.fullName,
+//     required this.position,
+//     required this.company,
+//     required this.socialLinks,
+//     this.isSelected = false,
+//     this.qrCodeAssetPath = 'assets/icons/qr_code.png',
+//     this.avatarRadius = 48.0,
+//     this.avatar,
+//     this.cardColor = const Color(0xFF1B1A20),
+//     this.placeholderColor,
+//   }) : super(key: key);
 
-  @override
-  _VisitCardState createState() => _VisitCardState();
-}
+//   @override
+//   _VisitCardState createState() => _VisitCardState();
+// }
 
-class _VisitCardState extends State<VisitCard> with SingleTickerProviderStateMixin {
-  late AnimationController _glowController;
-  late Animation<double> _glowAnimation;
-  final baseUrl = dotenv.env['BASE_URL'];
+// class _VisitCardState extends State<VisitCard> with SingleTickerProviderStateMixin {
+//   late AnimationController _glowController;
+//   late Animation<double> _glowAnimation;
+//   final baseUrl = dotenv.env['BASE_URL'];
 
-  @override
-  void initState() {
-    super.initState();
-    _glowController = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 1500),
-    );
+//   @override
+//   void initState() {
+//     super.initState();
+//     _glowController = AnimationController(
+//       vsync: this,
+//       duration: Duration(milliseconds: 1500),
+//     );
     
-    _glowAnimation = Tween(begin: 0.05, end: 0.2).animate(
-      CurvedAnimation(
-        parent: _glowController,
-        curve: Curves.easeInOut,
-      ),
-    );
+//     _glowAnimation = Tween(begin: 0.05, end: 0.2).animate(
+//       CurvedAnimation(
+//         parent: _glowController,
+//         curve: Curves.easeInOut,
+//       ),
+//     );
     
-    if (widget.isSelected) {
-      _glowController.repeat(reverse: true);
-    }
-  }
+//     if (widget.isSelected) {
+//       _glowController.repeat(reverse: true);
+//     }
+//   }
 
-  @override
-  void didUpdateWidget(VisitCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isSelected != oldWidget.isSelected) {
-      if (widget.isSelected) {
-        _glowController.repeat(reverse: true);
-      } else {
-        _glowController.stop();
-        _glowController.reset();
-      }
-    }
-  }
+//   @override
+//   void didUpdateWidget(VisitCard oldWidget) {
+//     super.didUpdateWidget(oldWidget);
+//     if (widget.isSelected != oldWidget.isSelected) {
+//       if (widget.isSelected) {
+//         _glowController.repeat(reverse: true);
+//       } else {
+//         _glowController.stop();
+//         _glowController.reset();
+//       }
+//     }
+//   }
 
-  @override
-  void dispose() {
-    _glowController.dispose();
-    super.dispose();
-  }
+//   @override
+//   void dispose() {
+//     _glowController.dispose();
+//     super.dispose();
+//   }
 
-  // Порядок приоритета для отображения соцсетей
-  static const List<String> _prioritySocials = [
-    'telegram',
-    'github',
-    'linkedin',
-    'instagram',
-    'twitter',
-  ];
+//   // Порядок приоритета для отображения соцсетей
+//   static const List<String> _prioritySocials = [
+//     'telegram',
+//     'github',
+//     'linkedin',
+//     'instagram',
+//     'twitter',
+//   ];
 
-  // Маппинг названий соцсетей на иконки
-  static const Map<String, IconData> _socialIcons = {
-    'twitter': Bootstrap.twitter_x,
-    'telegram': Bootstrap.telegram,
-    'instagram': Bootstrap.instagram,
-    'github': Bootstrap.github,
-    'linkedin': Bootstrap.linkedin,
-  };
+//   // Маппинг названий соцсетей на иконки
+//   static const Map<String, IconData> _socialIcons = {
+//     'twitter': Bootstrap.twitter_x,
+//     'telegram': Bootstrap.telegram,
+//     'instagram': Bootstrap.instagram,
+//     'github': Bootstrap.github,
+//     'linkedin': Bootstrap.linkedin,
+//   };
 
-  // Отфильтрованные и отсортированные по приоритету социальные ссылки
-  List<LinkWidget> get _topSocialLinks {
-    final filtered = widget.socialLinks.where((link) => 
-      _prioritySocials.any((social) => 
-        link.name.toLowerCase().contains(social))
-    ).toList();
+//   // Отфильтрованные и отсортированные по приоритету социальные ссылки
+//   List<LinkWidget> get _topSocialLinks {
+//     final filtered = widget.socialLinks.where((link) => 
+//       _prioritySocials.any((social) => 
+//         link.name.toLowerCase().contains(social))
+//     ).toList();
 
-    filtered.sort((a, b) {
-      final aIndex = _prioritySocials.indexWhere((social) => 
-        a.name.toLowerCase().contains(social));
-      final bIndex = _prioritySocials.indexWhere((social) => 
-        b.name.toLowerCase().contains(social));
-      return aIndex.compareTo(bIndex);
-    });
+//     filtered.sort((a, b) {
+//       final aIndex = _prioritySocials.indexWhere((social) => 
+//         a.name.toLowerCase().contains(social));
+//       final bIndex = _prioritySocials.indexWhere((social) => 
+//         b.name.toLowerCase().contains(social));
+//       return aIndex.compareTo(bIndex);
+//     });
 
-    return filtered.take(3).toList();
-  }
+//     return filtered.take(3).toList();
+//   }
 
-  @override
-  Widget build(BuildContext context) {
-    final topLinks = _topSocialLinks;
+//   @override
+//   Widget build(BuildContext context) {
+//     final topLinks = _topSocialLinks;
     
-    return AnimatedBuilder(
-      animation: _glowAnimation,
-      builder: (context, child) {
-        return FractionallySizedBox(
-          widthFactor: 0.9,
-          child: Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: widget.cardColor,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Colors.white.withOpacity(_glowAnimation.value * 2),
-                width: widget.isSelected ? 3 : 2,
-              ),
-              boxShadow: widget.isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(_glowAnimation.value),
-                      blurRadius: 10 + _glowAnimation.value * 20,
-                      spreadRadius: 0,
-                    ),
-                    // BoxShadow(
-                    //   color: Colors.white.withOpacity(_glowAnimation.value * 0.7),
-                    //   blurRadius: 30,
-                    //   spreadRadius: 10,
-                    // ),
-                  ]
-                : null,
-            ),
-            child: child,
-          ),
-        );
-      },
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return Row(
-            children: [
-              // Левая часть с аватаром и ссылками
-              Container(
-                width: constraints.maxWidth * 0.4,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Align(
-                      alignment: Alignment.center,
-                      child: _buildAvatar(),
-                    ),
-                    SizedBox(height: 15),
-                    ...List.generate(3, (i) {
-                      if (i < topLinks.length) {
-                        final link = topLinks[i];
-                        final icon = _socialIcons.entries.firstWhere(
-                          (entry) => link.name.toLowerCase().contains(entry.key),
-                          orElse: () => _socialIcons.entries.first
-                        ).value;
+//     return AnimatedBuilder(
+//       animation: _glowAnimation,
+//       builder: (context, child) {
+//         return FractionallySizedBox(
+//           widthFactor: 0.9,
+//           child: Container(
+//             padding: EdgeInsets.all(16),
+//             decoration: BoxDecoration(
+//               color: widget.cardColor,
+//               borderRadius: BorderRadius.circular(10),
+//               border: Border.all(
+//                 color: Colors.white.withOpacity(_glowAnimation.value * 2),
+//                 width: widget.isSelected ? 3 : 2,
+//               ),
+//               boxShadow: widget.isSelected
+//                 ? [
+//                     BoxShadow(
+//                       color: Colors.white.withOpacity(_glowAnimation.value),
+//                       blurRadius: 10 + _glowAnimation.value * 20,
+//                       spreadRadius: 0,
+//                     ),
+//                     // BoxShadow(
+//                     //   color: Colors.white.withOpacity(_glowAnimation.value * 0.7),
+//                     //   blurRadius: 30,
+//                     //   spreadRadius: 10,
+//                     // ),
+//                   ]
+//                 : null,
+//             ),
+//             child: child,
+//           ),
+//         );
+//       },
+//       child: LayoutBuilder(
+//         builder: (context, constraints) {
+//           return Row(
+//             children: [
+//               // Левая часть с аватаром и ссылками
+//               Container(
+//                 width: constraints.maxWidth * 0.4,
+//                 child: Column(
+//                   mainAxisSize: MainAxisSize.min,
+//                   crossAxisAlignment: CrossAxisAlignment.start,
+//                   children: [
+//                     Align(
+//                       alignment: Alignment.center,
+//                       child: _buildAvatar(),
+//                     ),
+//                     SizedBox(height: 15),
+//                     ...List.generate(3, (i) {
+//                       if (i < topLinks.length) {
+//                         final link = topLinks[i];
+//                         final icon = _socialIcons.entries.firstWhere(
+//                           (entry) => link.name.toLowerCase().contains(entry.key),
+//                           orElse: () => _socialIcons.entries.first
+//                         ).value;
                         
-                        return SocialLinkWidget(
-                          icon: icon,
-                          link: link.link,
-                        );
-                      }
-                      return SizedBox(height: 0);
-                    }),
-                  ],
-                ),
-              ),
+//                         return SocialLinkWidget(
+//                           icon: icon,
+//                           link: link.link,
+//                         );
+//                       }
+//                       return SizedBox(height: 0);
+//                     }),
+//                   ],
+//                 ),
+//               ),
               
-              // Правая часть
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: Column(
-                          children: [
-                            Text(widget.fullName, 
-                                style: TextStyle(
-                                  fontSize: 18, 
-                                  fontWeight: FontWeight.bold)),
-                            Text(widget.position, 
-                                style: TextStyle(
-                                  fontSize: 14, 
-                                  fontWeight: FontWeight.w300)),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Icon(FontAwesome.building, size: 20, color: Colors.white),
-                                SizedBox(width: 4),
-                                Text(widget.company, 
-                                  style: TextStyle(
-                                    fontSize: 14, 
-                                    fontWeight: FontWeight.w300
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: 15),
-                      QrImageView(
-                        data: '$baseUrl/cards/6/qr-link',
-                        version: QrVersions.auto,
-                        size: 80,
-                        gapless: false,
-                        backgroundColor: Colors.white,
-                        embeddedImage: AssetImage('assets/icons/LogoNight.png'),
-                        embeddedImageStyle: QrEmbeddedImageStyle(
-                          size: Size(32, 19),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
+//               // Правая часть
+//               Expanded(
+//                 child: Padding(
+//                   padding: const EdgeInsets.only(left: 20),
+//                   child: Column(
+//                     mainAxisSize: MainAxisSize.min,
+//                     crossAxisAlignment: CrossAxisAlignment.center,
+//                     children: [
+//                       Padding(
+//                         padding: const EdgeInsets.only(bottom: 10),
+//                         child: Column(
+//                           children: [
+//                             Text(widget.fullName, 
+//                                 style: TextStyle(
+//                                   fontSize: 18, 
+//                                   fontWeight: FontWeight.bold)),
+//                             Text(widget.position, 
+//                                 style: TextStyle(
+//                                   fontSize: 14, 
+//                                   fontWeight: FontWeight.w300)),
+//                             Row(
+//                               mainAxisAlignment: MainAxisAlignment.center,
+//                               crossAxisAlignment: CrossAxisAlignment.center,
+//                               children: [
+//                                 Icon(FontAwesome.building, size: 20, color: Colors.white),
+//                                 SizedBox(width: 4),
+//                                 Text(widget.company, 
+//                                   style: TextStyle(
+//                                     fontSize: 14, 
+//                                     fontWeight: FontWeight.w300
+//                                   ),
+//                                 ),
+//                               ],
+//                             ),
+//                           ],
+//                         ),
+//                       ),
+//                       SizedBox(height: 15),
+//                       QrImageView(
+//                         data: '$baseUrl/cards/6/qr-link',
+//                         version: QrVersions.auto,
+//                         size: 80,
+//                         gapless: false,
+//                         backgroundColor: Colors.white,
+//                         embeddedImage: AssetImage('assets/icons/LogoNight.png'),
+//                         embeddedImageStyle: QrEmbeddedImageStyle(
+//                           size: Size(32, 19),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           );
+//         },
+//       ),
+//     );
+//   }
 
-  Widget _buildAvatar() {
-    if (widget.avatar == null || widget.avatar!.isEmpty) {
-      return CircleAvatar(
-        radius: widget.avatarRadius,
-        backgroundColor: widget.placeholderColor ?? Colors.grey[300],
-        child: Icon(
-          Icons.person,
-          size: widget.avatarRadius,
-          color: Colors.white,
-        ),
-      );
-    }
+//   Widget _buildAvatar() {
+//     if (widget.avatar == null || widget.avatar!.isEmpty) {
+//       return CircleAvatar(
+//         radius: widget.avatarRadius,
+//         backgroundColor: widget.placeholderColor ?? Colors.grey[300],
+//         child: Icon(
+//           Icons.person,
+//           size: widget.avatarRadius,
+//           color: Colors.white,
+//         ),
+//       );
+//     }
 
-    return CircleAvatar(
-      radius: widget.avatarRadius,
-      backgroundImage: NetworkImage('$baseUrl${widget.avatar!}'),
-      onBackgroundImageError: (exception, stackTrace) {
-        //error
-      },
-    );
-  }
-}
+//     return CircleAvatar(
+//       radius: widget.avatarRadius,
+//       backgroundImage: NetworkImage('$baseUrl${widget.avatar!}'),
+//       onBackgroundImageError: (exception, stackTrace) {
+//         //error
+//       },
+//     );
+//   }
+// }
 
 class SocialLinkWidget extends StatelessWidget {
   final IconData icon;
