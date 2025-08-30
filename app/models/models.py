@@ -92,6 +92,7 @@ class Card(SQLModel, table=True):
     contacts: List["Contact"] = Relationship(back_populates="card")
     analytics: List["Analytics"] = Relationship(back_populates="card")
     elements: List["EditableElement"] = Relationship(back_populates="card")
+    template: Optional[str] = Field(default="template1")
 
 # Таблица для пользователя
 class User(SQLModel, table=True):

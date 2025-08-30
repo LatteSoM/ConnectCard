@@ -53,6 +53,7 @@ class CardBase(BaseModel):
     company: str | None = None
     position: str | None = None
     about: str | None = None
+    template: str | None = None
 
 class CardCreate(CardBase):
     contact_info_ids: List[UUID] = []
@@ -96,6 +97,7 @@ def create_card(data: str = Form(...), avatar: UploadFile | None = File(None), e
         position=card.position,
         about=card.about,
         user_id=current_user.id,
+        template=card.template,
     )
     session.add(db_card)
     session.commit()
