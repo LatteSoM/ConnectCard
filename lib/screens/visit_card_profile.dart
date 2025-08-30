@@ -18,7 +18,18 @@ enum VisitCardTemplate {
   template1,
   template2,
   template3,
-  template4,
+  template4;
+
+
+  static VisitCardTemplate fromString(String? value) {
+    if (value == null) {
+      return VisitCardTemplate.template1; // или выбросить исключение
+    }
+    return VisitCardTemplate.values.firstWhere(
+      (e) => e.name == value,
+      orElse: () => VisitCardTemplate.template1,
+    );
+  }
 }
 
 
@@ -141,6 +152,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
         'about': _aboutController.text.trim(),
         'contact_info_ids': (jsonDecode(contacts.body) as List).map((c) => c['id']).toList(),
         'link_widget_ids': (jsonDecode(widgets.body) as List).map((w) => w['id']).toList(),
+        'template': _selectedCardTemplate?.name,
       };
 
       request.fields['data'] = jsonEncode(data);
@@ -672,6 +684,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                                                   socialLinks: linkWidgets,
                                                   avatar: avatar,
                                                   selectedImage: _selectedImage,
+                                                  isSelected: _selectedCardTemplate == VisitCardTemplate.template1,
                                                 ),
                                               ),
                                               const SizedBox(height: 16),
@@ -685,6 +698,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                                                   socialLinks: linkWidgets,
                                                   avatar: avatar,
                                                   selectedImage: _selectedImage,
+                                                  isSelected: _selectedCardTemplate == VisitCardTemplate.template2,
                                                 ),
                                               ),
                                               const SizedBox(height: 16),
@@ -698,6 +712,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                                                   socialLinks: linkWidgets,
                                                   avatar: avatar,
                                                   selectedImage: _selectedImage,
+                                                  isSelected: _selectedCardTemplate == VisitCardTemplate.template3,
                                                 ),
                                               ),
                                               const SizedBox(height: 16),
@@ -711,6 +726,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                                                   socialLinks: linkWidgets,
                                                   avatar: avatar,
                                                   selectedImage: _selectedImage,
+                                                  isSelected: _selectedCardTemplate == VisitCardTemplate.template4,
                                                 ),
                                               ),
                                             ],
@@ -1240,6 +1256,8 @@ class VisitCard1 extends StatefulWidget {
   final Color? placeholderColor;
   final VisitCardTemplate template;
   final File? selectedImage;
+  final bool isSelected;
+  final bool isList;
 
   VisitCard1({
     Key? key,
@@ -1247,9 +1265,11 @@ class VisitCard1 extends StatefulWidget {
     required this.position,
     required this.company,
     required this.socialLinks,
+    this.isSelected = false,
+    this.isList = false,
     this.avatarRadius = 48.0,
     this.avatar,
-    this.cardColor = const Color.fromARGB(255, 0, 0, 0),
+    this.cardColor = const Color(0xFF1B1A20),
     this.placeholderColor,
     this.template = VisitCardTemplate.template1,
     this.selectedImage,
@@ -1259,8 +1279,49 @@ class VisitCard1 extends StatefulWidget {
   State<VisitCard1> createState() => _VisitCard1State();
 }
 
-class _VisitCard1State extends State<VisitCard1> {
+class _VisitCard1State extends State<VisitCard1> with SingleTickerProviderStateMixin {
+  late AnimationController _glowController;
+  late Animation<double> _glowAnimation;
   final baseUrl = dotenv.env['BASE_URL'];
+
+  @override
+  void initState() {
+    super.initState();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 1500),
+    );
+    
+    _glowAnimation = Tween(begin: 0.05, end: 0.2).animate(
+      CurvedAnimation(
+        parent: _glowController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    
+    if (widget.isSelected) {
+      _glowController.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(VisitCard1 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected != oldWidget.isSelected) {
+      if (widget.isSelected) {
+        _glowController.repeat(reverse: true);
+      } else {
+        _glowController.stop();
+        _glowController.reset();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _glowController.dispose();
+    super.dispose();
+  }
 
   // Порядок приоритета для отображения соцсетей
   static const List<String> _prioritySocials = [
@@ -1300,20 +1361,53 @@ class _VisitCard1State extends State<VisitCard1> {
 
   @override
   Widget build(BuildContext context) {
-    return FractionallySizedBox(
-      widthFactor: 0.9, // одинаковая ширина
-      child: AspectRatio(
-        aspectRatio: 1.6, // фиксированное соотношение сторон
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: widget.cardColor,
-            borderRadius: BorderRadius.circular(10),
+    return AnimatedBuilder(
+      animation: _glowAnimation,
+      builder: (context, child) {
+        return AspectRatio(
+          aspectRatio: 1.9,
+          child: FractionallySizedBox(
+          widthFactor: 0.9,
+          child: Container(
+              padding: EdgeInsets.only(left: 16, right: 16, top: 16),
+            decoration: BoxDecoration(
+              color: widget.cardColor,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: Colors.white.withOpacity(_glowAnimation.value *2),
+                width: widget.isSelected ? 3 : 2,
+              ),
+              boxShadow: widget.isSelected
+                ? [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(_glowAnimation.value),
+                    blurRadius: 10 + _glowAnimation.value * 20,
+                    spreadRadius: 0,
+                  )
+                ]
+                : null,
+            ),
+            child: child,
           ),
-          child: _buildTemplate(context),
         ),
-      ),
+        );
+      },
+      child: _buildTemplate(context),
     );
+    // return FractionallySizedBox(
+    //   widthFactor: 0.9, // одинаковая ширина
+    //   child: AspectRatio(
+    //     aspectRatio: 1.6, // фиксированное соотношение сторон
+    //     child: Container(
+    //       padding: const EdgeInsets.all(16),
+    //       decoration: BoxDecoration(
+    //         color: widget.cardColor,
+    //         borderRadius: BorderRadius.circular(10),
+    //       ),
+    //       child: _buildTemplate(context),
+    //     ),
+    //   ),
+    // );
   }
 
   Widget _buildTemplate(BuildContext context) {
@@ -1344,7 +1438,7 @@ class _VisitCard1State extends State<VisitCard1> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildAvatar(),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 10),
                   ...topLinks.map((link) {
                     final icon = _socialIcons.entries.firstWhere(
                       (entry) => link.name.toLowerCase().contains(entry.key),
@@ -1384,7 +1478,7 @@ class _VisitCard1State extends State<VisitCard1> {
                     QrImageView(
                       data: 'https://example.com/qr',
                       version: QrVersions.auto,
-                      size: 80,
+                      size: 70,
                       gapless: false,
                       backgroundColor: Colors.white,
                       embeddedImage:
@@ -1438,13 +1532,13 @@ class _VisitCard1State extends State<VisitCard1> {
                     QrImageView(
                       data: 'https://example.com/qr',
                       version: QrVersions.auto,
-                      size: 80,
+                      size: 70,
                       gapless: false,
                       backgroundColor: Colors.white,
                       embeddedImage:
                           const AssetImage('assets/icons/LogoNight.png'),
                       embeddedImageStyle:
-                          const QrEmbeddedImageStyle(size: Size(32, 19)),
+                          const QrEmbeddedImageStyle(size: Size(30, 18)),
                     ),
                   ],
                 ),
@@ -1458,7 +1552,7 @@ class _VisitCard1State extends State<VisitCard1> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _buildAvatar(),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 10),
                   ...topLinks.map((link) {
                     final icon = _socialIcons.entries.firstWhere(
                       (entry) => link.name.toLowerCase().contains(entry.key),
@@ -1622,28 +1716,29 @@ class _VisitCard1State extends State<VisitCard1> {
 }
 
   Widget _buildAvatar() {
+    final avatarRadius = widget.isList ? 52.0 : 46.0;
     return Stack(
       alignment: Alignment.center,
       children: [
         widget.selectedImage != null
           ? CircleAvatar(
-            radius: 55,
+            radius: avatarRadius,
             backgroundImage: FileImage(widget.selectedImage!),
           )
           : widget.avatar != null
             ? CircleAvatar(
-              radius: 55,
+              radius: avatarRadius,
               backgroundImage: NetworkImage('$baseUrl${widget.avatar}'),
               onBackgroundImageError: (exception, stackTrace) {
 
               },
             )
             : CircleAvatar(
-              radius: 55,
+              radius: avatarRadius,
               backgroundColor: Colors.grey[300],
-              child: const Icon(
+              child: Icon(
                 Icons.person,
-                size: 55,
+                size: avatarRadius,
                 color: Colors.white,
               ),
             ),

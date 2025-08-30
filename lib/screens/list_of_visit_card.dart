@@ -401,13 +401,15 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                                   opacity: selectedCardId == null || isSelected ? 1.0 : 0.5,
                                   child: card.elements.length > 0
                                   ? VisitCardRenderDesign(elements: card.elements)
-                                  : VisitCard(
+                                  : VisitCard1(
                                     fullName: card.fullname,
                                     position: card.position ?? '',
                                     company: card.company ?? '',
                                     socialLinks: card.linkWidgets,
                                     isSelected: isSelected,
                                     avatar: card.avatar,
+                                    isList: true,
+                                    template: VisitCardTemplate.fromString(card.template),
                                   ),
                                 ),
                               ),

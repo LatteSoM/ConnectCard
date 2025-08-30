@@ -146,6 +146,7 @@ class BusinessCard {
   final List<ContactInfo> contactInfos;
   final List<LinkWidget> linkWidgets;
   final List<CardElement> elements;
+  final String? template;
 
   BusinessCard({
     required this.id,
@@ -158,6 +159,7 @@ class BusinessCard {
     required this.contactInfos,
     required this.linkWidgets,
     required this.elements,
+    this.template,
   });
 
   factory BusinessCard.fromJson(Map<String, dynamic> json) {
@@ -178,6 +180,7 @@ class BusinessCard {
       elements: (json['elements'] as List<dynamic>?)
           ?.map((e) => CardElement.fromJson(e as Map<String, dynamic>))
           .toList() ?? [],
+      template: json['template'] as String?,
     );
   }
 }
