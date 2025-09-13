@@ -202,29 +202,85 @@ def read_user_cards(
     return cards
 
 @router.put("/{card_id}", response_model=CardResponse)
-def update_card(card_id: UUID, card: CardCreate, session: Session = Depends(get_session)):
+def update_card(
+    card_id: UUID, 
+    data: str = Form(...), 
+    avatar: UploadFile | None = File(None), 
+    element_images: list[UploadFile] = File([]), 
+    session: Session = Depends(get_session)
+):
     db_card = session.exec(select(Card).where(Card.id == card_id)).first()
     if db_card is None:
         raise HTTPException(status_code=404, detail="Card not found")
     
-    # Update basic fields
-    for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids'}).items():
+    card = CardCreate(**json.loads(data))
+
+    # Обработка аватара
+    if avatar:
+        # Удаляем старый аватар, если он существует
+        if db_card.avatar and os.path.exists(db_card.avatar.replace("/avatars/", AVATAR_DIR + "/")):
+            try:
+                os.remove(db_card.avatar.replace("/avatars/", AVATAR_DIR + "/"))
+            except OSError:
+                pass
+        
+        # Сохраняем новый аватар
+        ext = os.path.splitext(avatar.filename)[1]
+        filename = f"{uuid.uuid4()}{ext}"
+        path = os.path.join(AVATAR_DIR, filename)
+        with open(path, "wb") as buffer:
+            shutil.copyfileobj(avatar.file, buffer)
+        db_card.avatar = f"/avatars/{filename}"
+    
+    # Update basic fields (исключая avatar, так как он уже обработан)
+    for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids', 'avatar'}).items():
         setattr(db_card, key, value)
     
     # Update contact infos
     if card.contact_info_ids:
         contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))).all()
         db_card.contact_infos = contact_infos
+    else:
+        db_card.contact_infos = []  # очищаем, если нет идентификаторов
 
     # Update link widgets
     if card.link_widget_ids:
         link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
         db_card.link_widgets = link_widgets
-        
+    else:
+        db_card.link_widgets = []  # очищаем, если нет идентификаторов
+    
+    # Создаем карту файлов для элементов
+    element_files_map = {f.filename.split("_")[0]: f for f in element_images}
+    
+    # Удаляем старые элементы
     for elem in db_card.elements:
+        # Удаляем связанные изображения
+        if elem.image_url and os.path.exists(elem.image_url.replace("/avatars/", AVATAR_DIR + "/")):
+            try:
+                os.remove(elem.image_url.replace("/avatars/", AVATAR_DIR + "/"))
+            except OSError:
+                pass
         session.delete(elem)
+    
+    # Добавляем новые элементы с обработкой изображений
     for elem_data in card.elements:
-        db_element = EditableElement(**elem_data.model_dump(), card_id=db_card.id)
+        image_url = None
+        
+        # Обработка изображений элементов
+        if elem_data.type == "image" and getattr(elem_data, "temp_id", None):
+            f = element_files_map.get(elem_data.temp_id)
+            if f:
+                ext = os.path.splitext(f.filename)[1]
+                filename = f"{uuid.uuid4()}{ext}"
+                path = os.path.join(AVATAR_DIR, filename)
+                with open(path, "wb") as buffer:
+                    shutil.copyfileobj(f.file, buffer)
+                image_url = f"/avatars/{filename}"
+        
+        elem_dict = elem_data.model_dump()
+        elem_dict['image_url'] = image_url  # перезаписываем image_url
+        db_element = EditableElement(**elem_dict, card_id=db_card.id)
         session.add(db_element)
 
     session.commit()
