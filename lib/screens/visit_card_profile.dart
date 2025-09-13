@@ -5,6 +5,7 @@ import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/list_of_visit_card.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
@@ -13,6 +14,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 enum VisitCardTemplate {
   template1,
@@ -23,7 +25,7 @@ enum VisitCardTemplate {
 
   static VisitCardTemplate fromString(String? value) {
     if (value == null) {
-      return VisitCardTemplate.template1; // или выбросить исключение
+      return VisitCardTemplate.template1;
     }
     return VisitCardTemplate.values.firstWhere(
       (e) => e.name == value,
@@ -34,6 +36,9 @@ enum VisitCardTemplate {
 
 
 class VisitCardProfile extends StatefulWidget{
+  final BusinessCard? card;
+
+  const VisitCardProfile({super.key, this.card});
   @override
   State<VisitCardProfile> createState() => _VisitCardProfileState();
 }
@@ -56,7 +61,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
   final TextEditingController _companyController = TextEditingController();
   final TextEditingController _aboutController = TextEditingController();
   
-  ContactInfo contactInfo = ContactInfo();
+  ContactInfo1 contactInfo = ContactInfo1();
   SocialMedia socialMedia = SocialMedia();
 
   final phoneMask = MaskTextInputFormatter(mask: '+7 (###) ###-##-##');
@@ -66,6 +71,37 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
 
   VisitCardTemplate? _selectedCardTemplate;
   List<LinkWidget> linkWidgets = [];
+  List<ContactInfo> contactInfos = [];
+
+  late String _initialName;
+  late String _initialPosition;
+  late String _initialCompany;
+  late String _initialAbout;
+  late String? _initialAvatar;
+  late String? _initialEmail;
+  late String? _initialPhone;
+  late String? _initialWebSite;
+  late String? _initialTelegram;
+  late String? _initialLinkedin;
+  late String? _initialGithub;
+  late String? _initialTwitter;
+  late VisitCardTemplate _initialSelectedTemplate;
+
+  bool get _hasChanges =>
+  _nameController.text != _initialName ||
+  _positionController.text != _initialPosition ||
+  _companyController.text != _initialCompany ||
+  _aboutController.text != _initialAbout ||
+  avatar != _initialAvatar ||
+  contactInfo.email != _initialEmail ||
+  contactInfo.phone != _initialPhone ||
+  contactInfo.website != _initialWebSite ||
+  socialMedia.telegram != _initialTelegram ||
+  socialMedia.linkedin != _initialLinkedin ||
+  socialMedia.github != _initialGithub ||
+  socialMedia.twitter != _initialTwitter ||
+  _selectedCardTemplate != _initialSelectedTemplate;
+
 
   
 
@@ -74,11 +110,41 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
     super.initState();
     _mainInfoController.addListener(_updateMainInfoPrefix);
     _socialMediaController.addListener(_updateSocialLinkPrefix);
-    _loadInfo();
-    // _nameController.text = "Барак обама";
-    _positionController.text = "Старший кассир";
-    _companyController.text = """ООО "KFC" """;
-    _aboutController.text = "Просто чиловый парень";
+    if(widget.card == null) {
+      _loadInfo();
+    } else {
+      _positionController.text = widget.card?.position ?? "Разработчик";
+      _companyController.text = widget.card?.company ?? "Компания X";
+      _aboutController.text = widget.card?.about ?? "Кодер";
+      _nameController.text = widget.card?.fullname ?? "Имя";
+      avatar = widget.card?.avatar;
+      _selectedCardTemplate = VisitCardTemplate.fromString(widget.card?.template);
+      contactInfo = contactInfo.fromContactInfoList(widget.card!.contactInfos);
+      socialMedia = socialMedia.fromLinkWidgetsList(widget.card!.linkWidgets);
+      contactInfos = widget.card!.contactInfos;
+      linkWidgets = widget.card!.linkWidgets;
+    }
+    _positionController.text = widget.card?.position ?? "Разработчик";
+    _companyController.text = widget.card?.company ?? "Компания X";
+    _aboutController.text = widget.card?.about ?? "Кодер";
+    saveInitialValues();
+  }
+
+  void _addControllersListeners() {
+    final controllers = [
+      _nameController,
+      _positionController,
+      _companyController,
+      _aboutController,
+    ];
+
+    for (final controller in controllers) {
+      controller.addListener(_updateButtonState);
+    }
+  }
+
+  void _updateButtonState() {
+    setState(() {});
   }
 
   @override
@@ -88,6 +154,22 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
     _mainInfoController.dispose();
     _socialMediaController.dispose();
     super.dispose();
+  }
+
+  void saveInitialValues() {
+    _initialName = _nameController.text;
+    _initialPosition = _positionController.text;
+    _initialCompany = _companyController.text;
+    _initialAbout = _aboutController.text;
+    _initialAvatar = avatar;
+    _initialEmail = contactInfo.email;
+    _initialPhone = contactInfo.phone;
+    _initialWebSite = contactInfo.website;
+    _initialTelegram = socialMedia.telegram;
+    _initialLinkedin = socialMedia.linkedin;
+    _initialGithub = socialMedia.github;
+    _initialTwitter = socialMedia.twitter;
+    _initialSelectedTemplate = _selectedCardTemplate ?? VisitCardTemplate.template1;
   }
 
   Future<void> _loadInfo() async {
@@ -219,6 +301,83 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
     // Navigator.pop(context);
   }
 
+  Future<void> updateCard() async {
+    final client = http.Client();
+    final token = await storage.read(key: 'token');
+
+
+    List<String> contactIds = contactInfos.map((contact) => contact.id).toList();
+    List<String> linkWidgetIds = linkWidgets.map((linkWidget) => linkWidget.id).toList();
+    try {
+      final request = http.MultipartRequest('PUT', Uri.parse('$baseUrl/cards/${widget.card!.id}'));
+      request.headers.addAll({
+        'Authorization': 'Bearer $token',
+      });
+
+      final data = {
+        'fullname': _nameController.text.trim(),
+        'company': _companyController.text.trim(),
+        'position': _positionController.text.trim(),
+        'about': _aboutController.text.trim(),
+        'contact_info_ids': contactIds,
+        'link_widget_ids': linkWidgetIds,
+        'template': _selectedCardTemplate?.name,
+      };
+
+      request.fields['data'] = jsonEncode(data);
+
+      if (_selectedImage != null) {
+        final fileStream = http.ByteStream(_selectedImage!.openRead());
+        final length = await _selectedImage!.length();
+        final multipartFile = http.MultipartFile(
+          'avatar',
+          fileStream,
+          length,
+          filename: _selectedImage!.path.split('/').last,
+        );
+        request.files.add(multipartFile);
+      }
+
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+      
+      if (response.statusCode == 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              backgroundColor: Colors.grey[900],
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              content: const Text(
+                'Визитка Обновлена',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+              action: SnackBarAction(
+                label: 'К списку',
+                textColor: Colors.blueAccent,
+                onPressed: () => Navigator.pop(context),
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        print('Error: ${response.statusCode}');
+      }
+
+    } catch (e) {
+      print(e);
+    } finally {
+      client.close();
+    }
+  }
+
     Future<void> _pickImage() async {
     // if(await Permission.photos.request().isGranted) {
     //   final picker = ImagePicker();
@@ -249,9 +408,18 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
   void _removeMainInfo(String type) {
     setState(() {
       switch (type) {
-        case 'email': contactInfo.email = null; break;
-        case 'phone': contactInfo.phone = null; break;
-        case 'website': contactInfo.website = null; break;
+        case 'email':
+          contactInfo.email = null;
+          contactInfos.removeWhere((item) => item.name == 'email');
+          break;
+        case 'phone':
+          contactInfo.phone = null;
+          contactInfos.removeWhere((item) => item.name == 'phone');
+          break;
+        case 'website':
+        contactInfo.website = null;
+        contactInfos.removeWhere((item) => item.name == 'website');
+        break;
       }
     });
   }
@@ -287,6 +455,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
           case 'phone': contactInfo.phone = _mainInfoController.text; break;
           case 'website': contactInfo.website = _mainInfoController.text; break;
         }
+        _convertSocialToContactWidget();
         _mainInfoController.clear();
         _showAddMainInfo = false;
         _selectedInfoType = null;
@@ -332,6 +501,22 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
     }
   }
 
+  void _convertSocialToContactWidget() {
+
+    final name = _selectedInfoType;
+    if (name != null) {
+      setState(() {
+        contactInfos.add(ContactInfo(
+          id: '',
+          name: name,
+          description: _mainInfoController.text,
+        ));
+      });
+    }
+  }
+
+
+
   String? _validateMainInput(String? value){
     print(_selectedInfoType);
     if(value == null || value.isEmpty) {
@@ -374,9 +559,6 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
     if(_selectedSocialMediaType == 'telegram' && !_socialMediaController.text.startsWith('@')) {
       _socialMediaController.text = '@';
     }
-    if(_selectedSocialMediaType == 'github' && !_socialMediaController.text.startsWith('https://github.com/')) {
-      _socialMediaController.text = 'https://github.com/';
-    }
   }
 
   List<String> get _availableMainInfoTypes {
@@ -402,7 +584,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: EditingScope(
               isEditing: _isEditing,
               child: Column(
@@ -410,7 +592,6 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                   Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Кнопка назад с таким же стилем, как в первом примере
                     Padding(
                       padding: const EdgeInsets.all(0),
                       child: Container(
@@ -436,9 +617,14 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                             padding: const EdgeInsets.only(right: 8),
                             child: IconButton(
                               onPressed: () {
-                                _saveData();
+                                widget.card == null ?
+                                _saveData()
+                                :
+                                _hasChanges ?
+                                updateCard()
+                                : null;
                               },
-                              icon: Icon(Bootstrap.check_lg, color: Colors.green,),
+                              icon: Icon(Bootstrap.check_lg, color: widget.card == null ? Colors.green : _hasChanges ? Colors.green : Colors.grey[700],),
                             ),
                           ),
                       ],
@@ -470,8 +656,8 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(FontAwesome.building, color: Colors.white, size: 24,),
-                      SizedBox(width: 5,),
+                      const Icon(FontAwesome.building, color: Colors.white, size: 24,),
+                      const SizedBox(width: 5,),
                       //Организация
                       _editableText(
                         14,
@@ -645,6 +831,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                           template: _selectedCardTemplate!,
                           avatar: avatar,
                           selectedImage: _selectedImage,
+                          contactInfos: contactInfos,
                         ),
 
                     const SizedBox(height: 12,),
@@ -685,6 +872,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                                                   avatar: avatar,
                                                   selectedImage: _selectedImage,
                                                   isSelected: _selectedCardTemplate == VisitCardTemplate.template1,
+                                                  contactInfos: contactInfos,
                                                 ),
                                               ),
                                               const SizedBox(height: 16),
@@ -699,6 +887,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                                                   avatar: avatar,
                                                   selectedImage: _selectedImage,
                                                   isSelected: _selectedCardTemplate == VisitCardTemplate.template2,
+                                                  contactInfos: contactInfos,
                                                 ),
                                               ),
                                               const SizedBox(height: 16),
@@ -713,6 +902,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                                                   avatar: avatar,
                                                   selectedImage: _selectedImage,
                                                   isSelected: _selectedCardTemplate == VisitCardTemplate.template3,
+                                                  contactInfos: contactInfos,
                                                 ),
                                               ),
                                               const SizedBox(height: 16),
@@ -727,6 +917,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
                                                   avatar: avatar,
                                                   selectedImage: _selectedImage,
                                                   isSelected: _selectedCardTemplate == VisitCardTemplate.template4,
+                                                  contactInfos: contactInfos,
                                                 ),
                                               ),
                                             ],
@@ -879,9 +1070,8 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
           GestureDetector(
             onTap: () {
               _pickImage();
-              // print("Vibor");
             },
-            child: Icon(
+            child: const Icon(
               Icons.photo_camera,
               color: Colors.white,
               size: 30,
@@ -1042,6 +1232,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
           TextFormField(
             inputFormatters: [
               if(_selectedInfoType == 'phone') phoneMask,
+              if(_selectedSocialMediaType == 'github') UsernameInputFormatter(),
             ],
             autovalidateMode: AutovalidateMode.onUserInteraction,
             validator: (value) => _validateMainInput(value),
@@ -1129,6 +1320,7 @@ class InfoCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final bool fullWidth;
+  final String scheme;
 
   const InfoCard({
     super.key,
@@ -1136,7 +1328,47 @@ class InfoCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.fullWidth = false,
+    this.scheme = '',
   });
+
+  String? encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
+  }
+
+  Future<void> _launchUri(String scheme, String path) async {
+    final Uri launchUri = _buildUri(scheme, path);
+    
+    if (!await canLaunchUrl(launchUri)) {
+      print("Невозможно выполнить запуск: $launchUri");
+      return;
+    }
+
+    try {
+      await launchUrl(launchUri);
+    } catch (e) {
+      print("Ошибка при запуске URI: $e");
+    }
+  }
+
+  Uri _buildUri(String scheme, String path) {
+    if (scheme == 'mailto') {
+      return Uri(
+        scheme: scheme,
+        path: path,
+        query: encodeQueryParameters(<String, String>{
+          'subject': 'Связь через ConnectCard',
+        }),
+      );
+    }
+    
+    return Uri(
+      scheme: scheme,
+      path: path,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1144,54 +1376,78 @@ class InfoCard extends StatelessWidget {
         ? double.infinity
         : (MediaQuery.of(context).size.width - 21 * 2 - 13) / 2;
 
-    return Container(
-      width: cardWidth,
-      height: 50,
-      margin: EdgeInsets.only(bottom: fullWidth ? 8 : 0),
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Color(0xFF100E12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          icon,
-          SizedBox(width: 12),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Colors.white),
-                ),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: Color(0xFF989898),
-                    fontSize: 10,
+    return GestureDetector(
+      onTap: () {
+        _launchUri(scheme, subtitle);
+      },
+      child: Container(
+        width: cardWidth,
+        height: 50,
+        margin: EdgeInsets.only(bottom: fullWidth ? 8 : 0),
+        padding: EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Color(0xFF100E12),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            icon,
+            SizedBox(width: 12),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                        color: Colors.white),
                   ),
-                ),
-              ],
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Color(0xFF989898),
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class ContactInfo {
+class ContactInfo1 {
   String? email;
   String? phone;
   String? website;
   
   bool get isEmpty => email == null && phone == null && website == null;
+
+  ContactInfo1 fromContactInfoList(List<ContactInfo> contacts) {
+    final contactInfo1 = ContactInfo1();
+
+    for(final contact in contacts) {
+      switch(contact.name.toLowerCase()) {
+        case 'email':
+          contactInfo1.email = contact.description;
+          break;
+        case 'phone':
+          contactInfo1.phone = contact.description;
+          break;
+        case 'website':
+          contactInfo1.website = contact.description;
+          break;
+      }
+    }
+    return contactInfo1;
+  }
 
   List<Map<String, dynamic>> toContactList(){
     final contacts = <Map<String, dynamic>>[];
@@ -1222,6 +1478,28 @@ class SocialMedia {
   
   bool get isEmpty => telegram == null && linkedin == null && github == null && twitter == null;
 
+  SocialMedia fromLinkWidgetsList(List<LinkWidget> linkWidgets) {
+    final socialMedia = SocialMedia();
+
+    for(final linkWidget in linkWidgets) {
+      switch(linkWidget.name.toLowerCase()) {
+        case 'telegram':
+          socialMedia.telegram = linkWidget.link;
+          break;
+        case 'linkedin':
+          socialMedia.linkedin = linkWidget.link;
+          break;
+        case 'github':
+          socialMedia.github = linkWidget.link;
+          break;
+        case 'twitter':
+          socialMedia.twitter = linkWidget.link;
+          break;
+      }
+    }
+    return socialMedia;
+  }
+
   List<Map<String, dynamic>> toWidgetsList() {
     final widgets = <Map<String, dynamic>>[];
     
@@ -1250,6 +1528,7 @@ class VisitCard1 extends StatefulWidget {
   final String position;
   final String company;
   final List<LinkWidget> socialLinks;
+  final List<ContactInfo> contactInfos;
   final double avatarRadius;
   final String? avatar;
   final Color cardColor;
@@ -1265,6 +1544,7 @@ class VisitCard1 extends StatefulWidget {
     required this.position,
     required this.company,
     required this.socialLinks,
+    required this.contactInfos,
     this.isSelected = false,
     this.isList = false,
     this.avatarRadius = 48.0,
@@ -1801,6 +2081,46 @@ class _VisitCard1State extends State<VisitCard1> with SingleTickerProviderStateM
         ),
       );
     }
+  }
+}
+
+class UsernameInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Если текст не изменился или уменьшился - не обрабатываем
+    if (newValue.text.length <= oldValue.text.length) {
+      return newValue;
+    }
+
+    final extractedText = extractUsername(newValue.text);
+    
+    return TextEditingValue(
+      text: extractedText,
+      selection: TextSelection.collapsed(offset: extractedText.length),
+    );
+  }
+
+    String extractUsername(String url) {
+    final patterns = [
+      RegExp(r'github\.com/([^/]+)'),
+      RegExp(r'twitter\.com/([^/]+)'),
+      RegExp(r'telegram\.me/([^/]+)'),
+      RegExp(r'linkedin\.com/in/([^/]+)'),
+    ];
+    
+    final cleanUrl = url.replaceFirst(RegExp(r'^https?://(www\.)?'), '');
+    
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(cleanUrl);
+      if (match != null) {
+        return match.group(1)!;
+      }
+    }
+    
+    return url;
   }
 }
 

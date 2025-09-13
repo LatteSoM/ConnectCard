@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/list_of_visit_card.dart';
+import 'package:connect_card/screens/visit_card_profile.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -95,12 +96,15 @@ class _ShareVisitState extends State<ShareVisit>{
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 10),
-                    child: VisitCard(
+                    child: VisitCard1(
                       fullName: card.fullname,
                       position: card.position ?? '',
                       company: card.company ?? '',
                       socialLinks: card.linkWidgets,
-                      isSelected: true,),
+                      isSelected: true,
+                      template: VisitCardTemplate.fromString(card.template),
+                      contactInfos: card.contactInfos,
+                      ),
                   ),
                 ),
                 const SizedBox(height: 60),

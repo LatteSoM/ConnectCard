@@ -3,6 +3,11 @@
 <plist version="1.0">
 <dict>
 
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>sms</string>
+		<string>tel</string>
+	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Это приложение использует камеру для сканирования QR-кодов</string>
 	<key>NSPhotoLibraryUsageDescription</key>

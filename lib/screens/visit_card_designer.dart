@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:connect_card/third_party/matrix_gesture_detector.dart';
@@ -12,7 +13,8 @@ import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
 class VisitCardDesigner extends StatefulWidget {
-  const VisitCardDesigner({super.key});
+  final BusinessCard? card;
+  const VisitCardDesigner({super.key, this.card});
 
   @override
   State<VisitCardDesigner> createState() => _VisitCardDesignerState();
@@ -32,8 +34,34 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
   final baseUrl = dotenv.env['BASE_URL'];
   final storage = FlutterSecureStorage();
 
-  List<EditableElement> elements = [
-      EditableElement(
+  List<EditableElement> elements = [];
+
+
+  bool lockAspectRatio = false;
+  int? selectedIndex;
+  ElementType? selectedElementType;
+  double fontSize = 18;
+  double rotationAngle = 0;
+  double width = 100;
+  double height = 50;
+  Color textColor = Colors.white;
+  String fontFamily = 'Roboto';
+  FontWeight fontWeight = FontWeight.normal;
+  ShapeType shapeType = ShapeType.square;
+  Color shapeColor = Colors.blue;
+
+  @override
+  void initState() {
+    super.initState();
+    initElements();
+  }
+
+  void initElements() {
+    if(widget.card != null) {
+      elements.addAll(widget.card!.elements.map((e) => e.convertCardElementToEditableElement()).toList());
+
+    } else {
+      elements.addAll([EditableElement(
     type: ElementType.shape,
     matrix: Matrix4.identity()..translate(-118.66667175292969, -33.66667175292969),
     shapeType: ShapeType.circle,
@@ -64,22 +92,9 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
     fontSize: 18,
     baseFontSize: 18,
     textColor: Colors.white,
-  ),
-];
-
-
-  bool lockAspectRatio = false;
-  int? selectedIndex;
-  ElementType? selectedElementType;
-  double fontSize = 18;
-  double rotationAngle = 0;
-  double width = 100;
-  double height = 50;
-  Color textColor = Colors.white;
-  String fontFamily = 'Roboto';
-  FontWeight fontWeight = FontWeight.normal;
-  ShapeType shapeType = ShapeType.square;
-  Color shapeColor = Colors.blue;
+  ),]);
+    }
+  }
 
   Future<void> _saveCard() async {
     final token = await storage.read(key: 'token');

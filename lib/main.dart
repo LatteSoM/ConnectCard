@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:connect_card/models/user_model.dart';
+import 'package:connect_card/screens/card_test_screen.dart';
 import 'package:connect_card/screens/login_screen.dart';
+import 'package:connect_card/screens/visit_card_profile.dart';
 import 'package:connect_card/screens/welcome_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -103,6 +105,13 @@ class MainApp extends StatelessWidget {
     return MaterialApp(
       home: user != null ? WelcomeScreen(userName: user!.name) : LoginScreen(),
       // home: QrScanTest(),
+      // home: CardPreviewPage(visitCard: VisitCard1(
+      //   fullName: 'Alex',
+      //   position: 'Position',
+      //   company: 'Company',
+      //   socialLinks: [],
+      //   contactInfos: [ContactInfo(id: 'id', name: 'email', icon: 'email', description: 'sasha@mail.ru'),
+      //   ContactInfo(id: 'id', name: 'phone', icon: 'phone', description: '+7 (899) 809-80-80')]),),
       theme: ThemeData.dark(),
     );
   }

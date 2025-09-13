@@ -264,10 +264,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 15),
                         CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: const Text(
-                            'Я согласен на обработку персональных данных',
-                            style: TextStyle(color: Colors.white),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                          title: InkWell(
+                            onTap: () {
+                              showModalBottomSheet(
+                                context: context,
+                                builder: (context) => const AgreementBottomSheet(),
+                                backgroundColor: const Color(0xFF1A1A1A),
+                              );
+                            },
+                            child: RichText(
+                              text: const TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: 'Я согласен на ',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                  TextSpan(
+                                    text: 'обработку персональных данных',
+                                    style: TextStyle(
+                                      color: Colors.deepPurpleAccent,
+                                      decoration: TextDecoration.underline,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                           value: consentGiven,
                           onChanged: (value) => setState(() => consentGiven = value!),
@@ -275,7 +297,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           checkColor: Colors.white,
                           tileColor: const Color(0xFF1A1A1A),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         const SizedBox(height: 30),
@@ -391,6 +413,72 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class AgreementBottomSheet extends StatelessWidget {
+  const AgreementBottomSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Согласие на обработку персональных данных',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Expanded(
+            child: SingleChildScrollView(
+              child: Text(
+                """
+Перед началом работы с приложением «ConnectCard» пожалуйста, ознакомьтесь с нашей Политикой конфиденциальности и дайте согласие на обработку ваших персональных данных.
+
+Я даю согласие ООО «[Ваше Название Компании]» (ИНН [Ваш ИНН]), расположенному по адресу [Ваш юридический адрес], на обработку моих персональных данных, предоставленных в приложении, включая:
+
+Сбор, запись, систематизацию, накопление, хранение, уточнение (обновление, изменение), извлечение, использование, передачу (предоставление, доступ), обезличивание, блокирование, удаление, уничтожение.
+Обработка осуществляется с целью:
+
+Регистрации меня в качестве пользователя приложения и предоставления доступа к его функционалу.
+Заключения и исполнения условий Пользовательского соглашения.
+Обработки моих запросов и обращений в службу поддержки.
+Информирования меня о новых функциях, акциях и обновлениях приложения (если я дам отдельное согласие на рассылку).
+Проведения статистических и иных исследований на основе обезличенных данных.
+Способы обработки: автоматизированная и неавтоматизированная обработка.
+Срок действия согласия: на весь период использования приложения до момента отзыва мною данного согласия.
+
+Я подтверждаю, что ознакомлен(а) с полной версией Политики конфиденциальности, где указаны все условия обработки моих данных, включая перечень обрабатываемых данных, цели, условия их передачи третьим лицам и меры защиты.
+
+Согласие может быть отозвано мной путем отправки письменного заявления по адресу [Ваш электронный адрес службы поддержки] или на почтовый адрес Оператора.
+
+Подтверждаю, что даю согласие добровольно, своей волей и в своем интересе.
+                """,
+                style: TextStyle(color: Colors.white70),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurpleAccent,
+              ),
+              child: const Text('Закрыть', style: TextStyle(color: Colors.white)),
+            ),
+          ),
+        ],
       ),
     );
   }

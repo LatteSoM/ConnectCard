@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:connect_card/models/user_model.dart';
+import 'package:connect_card/screens/card_test_screen.dart';
+import 'package:connect_card/screens/profile_screen.dart';
 import 'package:connect_card/screens/share_visit.dart';
 import 'package:connect_card/screens/visit_card_designer.dart';
 import 'package:connect_card/screens/visit_card_profile.dart';
@@ -397,6 +399,10 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                                 onLongPressStart: (details) {
                                   _showCardContextMenu(context, details.globalPosition, card.id);
                                 },
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => card.elements.isEmpty ? VisitCardProfile(card: card,) : VisitCardDesigner(card: card)));
+                                  // Navigator.push(context, MaterialPageRoute(builder: (context) => CardPreviewPage(visitCard: VisitCard1(fullName: card.fullname, position: card.position!, company: card.company!, socialLinks: card.linkWidgets, template: VisitCardTemplate.fromString(card.template), contactInfos: card.contactInfos),)));
+                                },
                                 child: Opacity(
                                   opacity: selectedCardId == null || isSelected ? 1.0 : 0.5,
                                   child: card.elements.length > 0
@@ -410,6 +416,7 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
                                     avatar: card.avatar,
                                     isList: true,
                                     template: VisitCardTemplate.fromString(card.template),
+                                    contactInfos: card.contactInfos,
                                   ),
                                 ),
                               ),

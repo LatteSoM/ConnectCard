@@ -1,3 +1,4 @@
+import 'package:connect_card/screens/visit_card_designer.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -257,6 +258,47 @@ class CardElement {
       imageUrl: json['image_url'] as String?,
       imageOpacity: (json['image_opacity'] as num?)?.toDouble() ?? 1.0,
     );
+  }
+
+  Color parseColor(String hexColor) {
+    hexColor = hexColor.replaceFirst('#', '');
+    int colorValue = int.parse(hexColor, radix: 16);
+    return Color(colorValue);
+  }
+
+    final Map<String, FontWeight> fontWeightMap = {
+    'normal': FontWeight.normal,
+    'bold': FontWeight.bold,
+    'w100': FontWeight.w100,
+    'w200': FontWeight.w200,
+    'w300': FontWeight.w300,
+    'w400': FontWeight.w400,
+    'w500': FontWeight.w500,
+    'w600': FontWeight.w600,
+    'w700': FontWeight.w700,
+    'w800': FontWeight.w800,
+    'w900': FontWeight.w900,
+  };
+
+  EditableElement convertCardElementToEditableElement() {
+    return EditableElement(
+      type: ElementType.values.firstWhere((e) => e.name == type),
+      matrix: matrix,
+      rotationAngle: rotationAngle,
+      scaleFactor: scaleFactor,
+      width: width,
+      height: height,
+      color: color != null ? parseColor(color!) : Colors.black,
+      text: text,
+      fontSize: fontSize,
+      fontFamily: fontFamily ?? 'Roboto',
+      fontWeight: fontWeightMap[fontWeight!] ?? FontWeight.normal,
+      textColor: textColor != null ? parseColor(textColor!) : Colors.black,
+      shapeType: shapeType != null
+      ? ShapeType.values.firstWhere((e) => e.name == shapeType)
+      : null,
+      imageOpacity: imageOpacity,
+      );
   }
 
 }
