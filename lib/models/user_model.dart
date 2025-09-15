@@ -1,6 +1,9 @@
 import 'package:connect_card/screens/visit_card_designer.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:intl/intl.dart';
+
+final baseUrl = dotenv.env['BASE_URL'];
 
 class User {
   final String id;
@@ -297,6 +300,10 @@ class CardElement {
       shapeType: shapeType != null
       ? ShapeType.values.firstWhere((e) => e.name == shapeType)
       : null,
+      imageProvider: type == 'image'
+      ? NetworkImage('$baseUrl${imageUrl!}')
+      : null,
+      imageUrl: imageUrl,
       imageOpacity: imageOpacity,
       );
   }

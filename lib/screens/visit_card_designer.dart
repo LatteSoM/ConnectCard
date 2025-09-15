@@ -142,6 +142,43 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
     }
   }
 
+  Future<void> _updateCard() async {
+    final token = await storage.read(key: 'token');
+
+    final request = http.MultipartRequest('PUT', Uri.parse('$baseUrl/cards/${widget.card!.id}'));
+    request.headers['Authorization'] = 'Bearer $token';
+
+    final body = {
+      "fullname": "AlexTest",
+      "elements": elements.map((e) => e.toJson()).toList(),
+    };
+
+    request.fields['data'] = jsonEncode(body);
+    print(request.fields['data']);
+
+    for(final e in elements) {
+      if(e.type == ElementType.image && e.imageProvider is FileImage) {
+        final file = (e.imageProvider as FileImage).file;
+        final fileStream = http.ByteStream(file.openRead());
+        final length = await file.length();
+        request.files.add(http.MultipartFile(
+          'element_images', 
+          fileStream, 
+          length,
+          filename: '${e.tempId}_${file.path.split('/').last}'
+        ));
+      }
+    }
+
+    final response = await request.send();
+
+    if(response.statusCode == 200) {
+      SnackbarHelper.showMessage(context, 'Успешное обновление');
+    } else {
+      SnackbarHelper.showMessage(context, 'Ошибка', isSuccess: false);
+    }
+  }
+
   String _getCreateButtonText() {
     switch (selectedElementType) {
       case ElementType.text:
@@ -295,8 +332,8 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                             onPressed: () => Navigator.pop(context),
                           ),
                           IconButton(
-                            icon: const Icon(Icons.check, color: Colors.white),
-                            onPressed: () => _saveCard(),
+                            icon: const Icon(Icons.check, color: Colors.green),
+                            onPressed: () => widget.card == null ? _saveCard() : _updateCard(),
                           ),
                         ],
                       ),
@@ -1362,6 +1399,7 @@ class EditableElement {
   //Для изображений
   ImageProvider? imageProvider;
   double imageOpacity;
+  String? imageUrl;
 
   EditableElement({
     required this.type,
@@ -1388,6 +1426,7 @@ class EditableElement {
     //изображение
     this.imageProvider,
     this.imageOpacity = 1.0,
+    this.imageUrl,
   }) {
     // Если текст — выставляем базовые размеры
     if (type == ElementType.text) {
@@ -1421,7 +1460,7 @@ extension EditableElementMapper on EditableElement {
       "shape_type": shapeType?.toString().split('.').last,
 
       // image
-      "image_url": null,
+      "image_url": imageUrl,
       "image_opacity": imageOpacity,
     };
   }

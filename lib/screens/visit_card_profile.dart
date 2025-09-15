@@ -77,7 +77,6 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
   late String _initialPosition;
   late String _initialCompany;
   late String _initialAbout;
-  late String? _initialAvatar;
   late String? _initialEmail;
   late String? _initialPhone;
   late String? _initialWebSite;
@@ -92,7 +91,7 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
   _positionController.text != _initialPosition ||
   _companyController.text != _initialCompany ||
   _aboutController.text != _initialAbout ||
-  avatar != _initialAvatar ||
+  _selectedImage != null ||
   contactInfo.email != _initialEmail ||
   contactInfo.phone != _initialPhone ||
   contactInfo.website != _initialWebSite ||
@@ -161,7 +160,6 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
     _initialPosition = _positionController.text;
     _initialCompany = _companyController.text;
     _initialAbout = _aboutController.text;
-    _initialAvatar = avatar;
     _initialEmail = contactInfo.email;
     _initialPhone = contactInfo.phone;
     _initialWebSite = contactInfo.website;
@@ -518,7 +516,6 @@ class _VisitCardProfileState extends State<VisitCardProfile> {
 
 
   String? _validateMainInput(String? value){
-    print(_selectedInfoType);
     if(value == null || value.isEmpty) {
       return 'Введите информацию';
     }
