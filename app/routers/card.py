@@ -233,7 +233,13 @@ def update_card(
         db_card.avatar = f"/avatars/{filename}"
     
     # Update basic fields (исключая avatar, так как он уже обработан)
-    for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids', 'avatar'}).items():
+    # for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids', 'avatar'}).items():
+    #     setattr(db_card, key, value)
+    simple_fields = ['fullname', 'company', 'position', 'about', 'template']
+    update_data = {k: v for k, v in card.model_dump(exclude_unset=True).items() 
+        if k in simple_fields and v is not None}
+
+    for key, value in update_data.items():
         setattr(db_card, key, value)
     
     # Update contact infos
@@ -253,24 +259,19 @@ def update_card(
     # Создаем карту файлов для элементов
     element_files_map = {f.filename.split("_")[0]: f for f in element_images}
     
-    # Удаляем старые элементы
-    for elem in db_card.elements:
-        # Удаляем связанные изображения
-        if elem.image_url and os.path.exists(elem.image_url.replace("/avatars/", AVATAR_DIR + "/")):
-            try:
-                os.remove(elem.image_url.replace("/avatars/", AVATAR_DIR + "/"))
-            except OSError:
-                pass
-        session.delete(elem)
-    
-    # Добавляем новые элементы с обработкой изображений
+    # 1. Сначала обрабатываем новые элементы
+    new_elements = []
+    element_files_map = {f.filename.split("_")[0]: f for f in element_images}
+
     for elem_data in card.elements:
-        image_url = None
+        # Сохраняем существующий image_url по умолчанию
+        image_url = elem_data.image_url
         
-        # Обработка изображений элементов
+        # Обработка только НОВЫХ изображений
         if elem_data.type == "image" and getattr(elem_data, "temp_id", None):
             f = element_files_map.get(elem_data.temp_id)
             if f:
+                # Это новый файл - сохраняем и обновляем URL
                 ext = os.path.splitext(f.filename)[1]
                 filename = f"{uuid.uuid4()}{ext}"
                 path = os.path.join(AVATAR_DIR, filename)
@@ -278,10 +279,27 @@ def update_card(
                     shutil.copyfileobj(f.file, buffer)
                 image_url = f"/avatars/{filename}"
         
+        # Создаем объект элемента
         elem_dict = elem_data.model_dump()
-        elem_dict['image_url'] = image_url  # перезаписываем image_url
-        db_element = EditableElement(**elem_dict, card_id=db_card.id)
-        session.add(db_element)
+        elem_dict['image_url'] = image_url  # Важно: сохраняем URL
+        elem_dict['card_id'] = db_card.id
+        
+        db_element = EditableElement(**elem_dict)
+        new_elements.append(db_element)
+
+    # 2. Удаляем старые элементы
+    for old_elem in db_card.elements:
+        if old_elem.image_url:
+            old_image_path = old_elem.image_url.replace("/avatars/", AVATAR_DIR + "/")
+            if os.path.exists(old_image_path):
+                try:
+                    os.remove(old_image_path)
+                except OSError:
+                    pass
+        session.delete(old_elem)
+
+    # 3. Добавляем новые элементы
+    session.add_all(new_elements)
 
     session.commit()
     session.refresh(db_card)
