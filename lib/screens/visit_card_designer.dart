@@ -6,8 +6,10 @@ import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:connect_card/third_party/matrix_gesture_detector.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+import 'package:flutter_custom_clippers/flutter_custom_clippers.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:icons_plus/icons_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
@@ -23,6 +25,15 @@ class VisitCardDesigner extends StatefulWidget {
 enum ElementType { text, shape, image, background, link }
 enum ShapeType { square, circle, triangle }
 enum LinkType {email, phone, website, telegram, linkedin, github, twitter }
+enum ClipType {
+  rectangle,
+  rounded,
+  circle,
+  wave,
+  wavyCircle,
+  parallelogram,
+  puzzle,
+}
 const Map<ShapeType, String> shapeLabels = {
   ShapeType.square: "Квадрат",
   ShapeType.circle: "Круг",
@@ -58,6 +69,8 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
 
   void initElements() {
     if(widget.card != null) {
+      for(final item in widget.card!.elements) {
+      }
       elements.addAll(widget.card!.elements.map((e) => e.convertCardElementToEditableElement()).toList());
 
     } else {
@@ -154,7 +167,6 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
     };
 
     request.fields['data'] = jsonEncode(body);
-    print(request.fields['data']);
 
     for(final e in elements) {
       if(e.type == ElementType.image && e.imageProvider is FileImage) {
@@ -545,6 +557,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                                 _buildShapeHeightSlider(),
                                 _buildLockButton(),
                                 _buildShapeWidthSlider(),
+                                _buildDropDownClip(),
                                 _buildOpacitySlider(),
                                 _buildRotationSlider(),
                               ] else if (selectedIndex != null && selectedElementType == ElementType.link) ...[
@@ -608,6 +621,14 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
         ],
       ),
     );
+  }
+
+  Widget _buildDropDownClip() {
+    return IconButton(
+      onPressed: () {
+        _showShapeSelector(context);
+      },
+      icon: const Icon(FontAwesome.shapes_solid));
   }
 
 
@@ -712,12 +733,18 @@ Widget _buildElementWidget(EditableElement item, int index) {
           border: selectedIndex == index && selectedElementType == ElementType.image
               ? Border.all(color: Colors.yellow, width: 2)
               : null,
-          image: DecorationImage(
-            image: item.imageProvider!,
-            fit: BoxFit.cover,
-          )
         ),
-
+        child: ClipPath(
+          clipper: _getClipper(item.clipType),
+          child: Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: item.imageProvider!,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   } else if (item.type == ElementType.link) {
@@ -757,6 +784,142 @@ Widget _buildOpacitySlider() {
   );
 }
 
+  Future<void> _showShapeSelector(BuildContext context) async {
+  final selected = await showDialog<ShapeType>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text('Выберите форму', style: TextStyle(color: Colors.white)),
+        content: SizedBox(
+          width: 350,
+          height: 400,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 100,
+              childAspectRatio: 1,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: ClipType.values.length,
+            itemBuilder: (context, index) {
+              final clip = ClipType.values[index];
+              final isSelected = elements[selectedIndex!].clipType == clip;
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    elements[selectedIndex!].clipType = clip;
+                  });
+                },
+                child: AnimatedScale(
+                  scale: isSelected ? 1.1 : 1.0,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[850],
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: Colors.yellow.withOpacity(0.6),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                              )
+                            ]
+                          : [],
+                    ),
+                    child: Stack(
+                      children: [
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(child: Center(child: _buildShapePreview(clip))),
+                            const SizedBox(height: 6),
+                            Text(
+                              _clipName(clip),
+                              style: TextStyle(
+                                color: isSelected ? Colors.yellow : Colors.white,
+                                fontSize: 12,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                              textAlign: TextAlign.center,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                        if (isSelected)
+                          const Positioned(
+                            right: 4,
+                            top: 4,
+                            child: Icon(Icons.check_circle, color: Colors.yellow, size: 20),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+          ),
+        ),
+      );
+    },
+  );
+}
+
+  Widget _buildShapePreview(ClipType clip) {
+    return ClipPath(
+      clipper: _getClipper(clip),
+      child: Container(
+        width: 80,
+        height: 80,
+        color: Colors.white,
+      ),
+    );
+  }
+
+  String _clipName(ClipType clip) {
+    switch (clip) {
+      case ClipType.rectangle:
+        return 'Праямоугольник';
+      case ClipType.rounded:
+        return 'Волна вверх';
+      case ClipType.circle:
+        return 'Волна вниз';
+      case ClipType.wave:
+        return 'Волна';
+      case ClipType.wavyCircle:
+        return 'Пивная крышка';
+      case ClipType.parallelogram:
+        return 'Ромб';
+      case ClipType.puzzle:
+        return 'Пазл';
+    }
+  }
+
+  CustomClipper<Path>? _getClipper(ClipType clip) {
+    switch(clip) {
+      case ClipType.rectangle:
+        return null;
+      case ClipType.rounded:
+        return OvalTopBorderClipper();
+      case ClipType.circle:
+        return OvalBottomBorderClipper();
+      case ClipType.wave:
+        return WaveClipperOne();
+      case ClipType.wavyCircle:
+        return WavyCircleClipper(32);
+      case ClipType.parallelogram:
+        return ParallelogramClipper();
+      case ClipType.puzzle:
+        return MessageClipper();
+    }
+  }
 
 
   Widget _buildLockButton() {
@@ -1400,6 +1563,7 @@ class EditableElement {
   ImageProvider? imageProvider;
   double imageOpacity;
   String? imageUrl;
+  ClipType clipType;
 
   EditableElement({
     required this.type,
@@ -1427,6 +1591,7 @@ class EditableElement {
     this.imageProvider,
     this.imageOpacity = 1.0,
     this.imageUrl,
+    this.clipType = ClipType.rectangle,
   }) {
     // Если текст — выставляем базовые размеры
     if (type == ElementType.text) {
@@ -1462,6 +1627,7 @@ extension EditableElementMapper on EditableElement {
       // image
       "image_url": imageUrl,
       "image_opacity": imageOpacity,
+      "clip_type": clipType.name,
     };
   }
 }

@@ -9,6 +9,7 @@ import 'package:connect_card/screens/visit_card_designer.dart';
 import 'package:connect_card/screens/visit_card_profile.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_custom_clippers/flutter_custom_clippers.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
@@ -930,6 +931,8 @@ Widget _buildElement(CardElement element) {
     );
 
     final color = parseColor(type == ElementType.text ? element.textColor! : element.color!);
+    ClipType elementClipType = ClipType.values.firstWhere((e) => e.name == element.clipType,
+    orElse: () => ClipType.rectangle);
     
     switch (type) {
       case ElementType.text:
@@ -951,10 +954,15 @@ Widget _buildElement(CardElement element) {
           child: Container(
             width: element.width,
             height: element.height,
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage('$baseUrl${element.imageUrl}'),
-                fit: BoxFit.cover,
+            child: ClipPath(
+              clipper: _getClipper(elementClipType),
+              child: Container(
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage('$baseUrl${element.imageUrl}'),
+                    fit: BoxFit.cover,
+                    )
+                ),
               ),
             ),
           ),
@@ -985,6 +993,25 @@ Widget _buildElement(CardElement element) {
       
       default:
         return Container();
+    }
+  }
+
+    CustomClipper<Path>? _getClipper(ClipType clip) {
+    switch(clip) {
+      case ClipType.rectangle:
+        return null;
+      case ClipType.rounded:
+        return OvalTopBorderClipper();
+      case ClipType.circle:
+        return OvalBottomBorderClipper();
+      case ClipType.wave:
+        return WaveClipperOne();
+      case ClipType.wavyCircle:
+        return WavyCircleClipper(32);
+      case ClipType.parallelogram:
+        return ParallelogramClipper();
+      case ClipType.puzzle:
+        return MessageClipper();
     }
   }
 }

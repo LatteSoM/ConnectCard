@@ -206,6 +206,7 @@ class CardElement {
   final String? shapeType;
   final String? imageUrl;
   final double imageOpacity;
+  final String? clipType;
 
   CardElement({
     required this.type,
@@ -224,6 +225,7 @@ class CardElement {
     this.shapeType,
     this.imageUrl,
     required this.imageOpacity,
+    this.clipType,
   });
 
   factory CardElement.fromJson(Map<String, dynamic> json) {
@@ -260,6 +262,7 @@ class CardElement {
       shapeType: json['shape_type'] as String?,
       imageUrl: json['image_url'] as String?,
       imageOpacity: (json['image_opacity'] as num?)?.toDouble() ?? 1.0,
+      clipType: json['clip_type'] as String? ?? '',
     );
   }
 
@@ -305,6 +308,7 @@ class CardElement {
       : null,
       imageUrl: imageUrl,
       imageOpacity: imageOpacity,
+      clipType: ClipType.values.firstWhere((e) => e.name == clipType),
       );
   }
 
