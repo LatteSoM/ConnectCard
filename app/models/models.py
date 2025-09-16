@@ -74,6 +74,7 @@ class EditableElement(SQLModel, table=True):
     shape_type: Optional[str] = None  # типа, 'rectangle', 'circle'
     image_url: Optional[str] = None  # URL пикчи
     image_opacity: float = 1.0
+    clip_type: Optional[str] = None
     card_id: Optional[UUID] = Field(default=None, foreign_key="card.id")
     card: Optional["Card"] = Relationship(back_populates="elements")
     

@@ -39,6 +39,7 @@ class EditableElementBase(BaseModel):
     shape_type: Optional[str] = None
     image_url: Optional[str] = None
     image_opacity: float = 1.0
+    clip_type: Optional[str] = None
 
 class EditableElementResponse(EditableElementBase):
     id: UUID
@@ -215,7 +216,7 @@ def update_card(
     
     card = CardCreate(**json.loads(data))
 
-    # Обработка аватара
+    # ---------- Обновляем аватар ----------
     if avatar:
         # Удаляем старый аватар, если он существует
         if db_card.avatar and os.path.exists(db_card.avatar.replace("/avatars/", AVATAR_DIR + "/")):
@@ -232,9 +233,7 @@ def update_card(
             shutil.copyfileobj(avatar.file, buffer)
         db_card.avatar = f"/avatars/{filename}"
     
-    # Update basic fields (исключая avatar, так как он уже обработан)
-    # for key, value in card.model_dump(exclude={'contact_info_ids', 'link_widget_ids', 'avatar'}).items():
-    #     setattr(db_card, key, value)
+    # ---------- Обновляем простые поля ----------
     simple_fields = ['fullname', 'company', 'position', 'about', 'template']
     update_data = {k: v for k, v in card.model_dump(exclude_unset=True).items() 
         if k in simple_fields and v is not None}
@@ -242,36 +241,35 @@ def update_card(
     for key, value in update_data.items():
         setattr(db_card, key, value)
     
-    # Update contact infos
+    # ---------- Обновляем контакты ----------
     if card.contact_info_ids:
-        contact_infos = session.exec(select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))).all()
+        contact_infos = session.exec(
+            select(ContactInfo).where(ContactInfo.id.in_(card.contact_info_ids))
+        ).all()
         db_card.contact_infos = contact_infos
     else:
-        db_card.contact_infos = []  # очищаем, если нет идентификаторов
+        db_card.contact_infos = []
 
-    # Update link widgets
+    # ---------- Обновляем виджеты ссылок ----------
     if card.link_widget_ids:
-        link_widgets = session.exec(select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))).all()
+        link_widgets = session.exec(
+            select(LinkWidget).where(LinkWidget.id.in_(card.link_widget_ids))
+        ).all()
         db_card.link_widgets = link_widgets
     else:
-        db_card.link_widgets = []  # очищаем, если нет идентификаторов
+        db_card.link_widgets = []
     
-    # Создаем карту файлов для элементов
+    # ---------- Обрабатываем элементы ----------
     element_files_map = {f.filename.split("_")[0]: f for f in element_images}
-    
-    # 1. Сначала обрабатываем новые элементы
     new_elements = []
-    element_files_map = {f.filename.split("_")[0]: f for f in element_images}
 
     for elem_data in card.elements:
-        # Сохраняем существующий image_url по умолчанию
-        image_url = elem_data.image_url
-        
-        # Обработка только НОВЫХ изображений
+        image_url = elem_data.image_url  # по умолчанию оставляем старый
+
+        # Если новый файл (через temp_id)
         if elem_data.type == "image" and getattr(elem_data, "temp_id", None):
             f = element_files_map.get(elem_data.temp_id)
             if f:
-                # Это новый файл - сохраняем и обновляем URL
                 ext = os.path.splitext(f.filename)[1]
                 filename = f"{uuid.uuid4()}{ext}"
                 path = os.path.join(AVATAR_DIR, filename)
@@ -279,31 +277,37 @@ def update_card(
                     shutil.copyfileobj(f.file, buffer)
                 image_url = f"/avatars/{filename}"
         
-        # Создаем объект элемента
         elem_dict = elem_data.model_dump()
-        elem_dict['image_url'] = image_url  # Важно: сохраняем URL
+        elem_dict['image_url'] = image_url
         elem_dict['card_id'] = db_card.id
-        
+
         db_element = EditableElement(**elem_dict)
         new_elements.append(db_element)
 
-    # 2. Удаляем старые элементы
-    for old_elem in db_card.elements:
+    # ---------- ФИКС: собираем список новых image_url ----------
+    new_image_urls = {e.image_url for e in new_elements if e.image_url}
+
+    # ---------- Удаляем старые элементы ----------
+    for old_elem in list(db_card.elements):
         if old_elem.image_url:
-            old_image_path = old_elem.image_url.replace("/avatars/", AVATAR_DIR + "/")
-            if os.path.exists(old_image_path):
-                try:
-                    os.remove(old_image_path)
-                except OSError:
-                    pass
+            # удаляем только если файл не используется в новых элементах
+            if old_elem.image_url not in new_image_urls:
+                old_filename = os.path.basename(old_elem.image_url)
+                old_image_path = os.path.join(AVATAR_DIR, old_filename)
+                if os.path.exists(old_image_path):
+                    try:
+                        os.remove(old_image_path)
+                    except OSError:
+                        pass
         session.delete(old_elem)
 
-    # 3. Добавляем новые элементы
+    # ---------- Добавляем новые ----------
     session.add_all(new_elements)
 
     session.commit()
     session.refresh(db_card)
     return db_card
+
 
 @router.delete("/{card_id}")
 def delete_card(card_id: UUID, session: Session = Depends(get_session)):
