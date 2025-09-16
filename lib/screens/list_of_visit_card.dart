@@ -930,9 +930,46 @@ Widget _buildElement(CardElement element) {
       orElse: () => ElementType.text,
     );
 
+    Color? _getColor(ElementType localType) {
+      switch(localType) {
+        case ElementType.text:
+          return parseColor(element.textColor!);
+        case ElementType.shape:
+          return parseColor(element.color!);
+        case ElementType.image:
+          return null;
+        case ElementType.background:
+          return null;
+        case ElementType.link:
+          return parseColor(element.backgroundLinkColor!);
+      }
+    }
+
+    IconData _getIconForLink(LinkType type) {
+      switch(type) {
+        case LinkType.email:
+          return Icons.email;
+        case LinkType.phone:
+          return Icons.phone;
+        case LinkType.website:
+          return Icons.web;
+        case LinkType.telegram:
+          return Bootstrap.telegram;
+        case LinkType.linkedin:
+          return Bootstrap.linkedin;
+        case LinkType.github:
+          return Bootstrap.github;
+        case LinkType.twitter:
+          return Bootstrap.twitter_x;
+      }
+    }
+
     final color = parseColor(type == ElementType.text ? element.textColor! : element.color!);
     ClipType elementClipType = ClipType.values.firstWhere((e) => e.name == element.clipType,
     orElse: () => ClipType.rectangle);
+
+    LinkType elementLinkType = LinkType.values.firstWhere((e) => e.name == element.linkType,
+    orElse: () => LinkType.email);
     
     switch (type) {
       case ElementType.text:
@@ -942,7 +979,7 @@ Widget _buildElement(CardElement element) {
             fontSize: element.fontSize?.toDouble() ?? element.baseFontSize?.toDouble() ?? 18,
             fontFamily: element.fontFamily,
             color: element.textColor != null 
-                ? color 
+                ? _getColor(ElementType.text) 
                 : Colors.black,
             fontWeight: fontWeightMap[element.fontWeight],
           ),
@@ -987,8 +1024,40 @@ Widget _buildElement(CardElement element) {
           child: CustomPaint(
             painter: ShapePainter(
               shapeType: shapeType,
-              color: color!),
+              color: _getColor(ElementType.shape)!),
           ),
+        );
+      case ElementType.link:
+        return Container(
+          padding: const EdgeInsets.all(8),
+          
+          child: GestureDetector(
+  // onTap: () => _openLinkSettings(item),
+  // onLongPress: () => _handleLinkTap(item),
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: _getColor(ElementType.link),
+      border: Border.all(color: Colors.grey),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(_getIconForLink(elementLinkType), size: element.fontSize, color: Colors.white),
+        const SizedBox(width: 6),
+        Text(element.text ?? '', 
+          style: TextStyle(
+            color: _getColor(ElementType.text),
+            fontFamily: element.fontFamily,
+            fontSize: element.fontSize,
+            fontWeight: fontWeightMap[element.fontWeight],
+          ),
+        ),
+      ],
+    ),
+  ),
+)
         );
       
       default:

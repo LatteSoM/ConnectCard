@@ -12,7 +12,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
+
+//tg tg://resolve?domain=username
+//github https://github.com/$username
+//linkedin linkedin://in/username
+//twitter https://x.com/username
+
+
 
 class VisitCardDesigner extends StatefulWidget {
   final BusinessCard? card;
@@ -43,7 +51,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
   
   final TextEditingController _controller1 = TextEditingController();
   final baseUrl = dotenv.env['BASE_URL'];
-  final storage = FlutterSecureStorage();
+  final storage = const FlutterSecureStorage();
 
   List<EditableElement> elements = [];
 
@@ -56,6 +64,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
   double width = 100;
   double height = 50;
   Color textColor = Colors.white;
+  Color? backgroundLinkColor = Colors.grey[800];
   String fontFamily = 'Roboto';
   FontWeight fontWeight = FontWeight.normal;
   ShapeType shapeType = ShapeType.square;
@@ -69,10 +78,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
 
   void initElements() {
     if(widget.card != null) {
-      for(final item in widget.card!.elements) {
-      }
       elements.addAll(widget.card!.elements.map((e) => e.convertCardElementToEditableElement()).toList());
-
     } else {
       elements.addAll([EditableElement(
     type: ElementType.shape,
@@ -108,6 +114,42 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
   ),]);
     }
   }
+
+  Future<void> openLink(LinkType item, String value) async {
+    Uri? appUrl;
+    Uri? webUrl;
+
+    switch (item) {
+      case LinkType.telegram:
+        appUrl = Uri.parse("tg://resolve?domain=${value}");
+        webUrl = Uri.parse("https://t.me/${value}");
+        break;
+      case LinkType.github:
+        webUrl = Uri.parse("https://github.com/${value}");
+        break;
+      case LinkType.linkedin:
+        appUrl = Uri.parse("linkedin://in/${value}");
+        webUrl = Uri.parse("https://www.linkedin.com/in/${value}");
+        break;
+      case LinkType.twitter:
+        appUrl = Uri.parse("twitter://user?screen_name=${value}");
+        webUrl = Uri.parse("https://x.com/${value}");
+        break;
+      case LinkType.email:
+        // TODO: Handle this case.
+      case LinkType.phone:
+        // TODO: Handle this case.
+      case LinkType.website:
+        // TODO: Handle this case.
+    }
+
+    if (appUrl != null && await canLaunchUrl(appUrl)) {
+      await launchUrl(appUrl, mode: LaunchMode.externalApplication);
+    } else if (webUrl != null) {
+      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+    }
+  }
+
 
   Future<void> _saveCard() async {
     final token = await storage.read(key: 'token');
@@ -565,6 +607,7 @@ class _VisitCardDesignerState extends State<VisitCardDesigner> {
                                 _buildDropDownLink(),
                                 _buildTextFieldWithFontWeight(),
                                 _buildFontFamilyWithColorPicker(),
+                                _buildSoloColorPicker(),
                                 _buildFontSizeSlider(),
                                 _buildRotationSlider(),
                               ],
@@ -701,8 +744,8 @@ Widget _buildElementWidget(EditableElement item, int index) {
         style: TextStyle(
           color: item.textColor,
           fontSize: item.fontSize,
-          fontWeight: item.fontWeight ?? FontWeight.normal,
-          fontFamily: item.fontFamily ?? 'Roboto',
+          fontWeight: item.fontWeight,
+          fontFamily: item.fontFamily,
         ),
       ),
     );
@@ -749,24 +792,62 @@ Widget _buildElementWidget(EditableElement item, int index) {
     );
   } else if (item.type == ElementType.link) {
         return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        border: selectedIndex == index && selectedElementType == ElementType.link
-            ? Border.all(color: Colors.yellow, width: 2)
-            : null,
-      ),
-      child: Text(
-        item.text ?? '',
-        style: TextStyle(
-          color: item.textColor,
-          fontSize: item.fontSize,
-          fontWeight: item.fontWeight ?? FontWeight.normal,
-          fontFamily: item.fontFamily ?? 'Roboto',
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: selectedIndex == index && selectedElementType == ElementType.link
+                ? Border.all(color: Colors.yellow, width: 2)
+                : null,
+          ),
+          child: GestureDetector(
+  // onTap: () => _openLinkSettings(item),
+  // onLongPress: () => _handleLinkTap(item),
+  child: Container(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: item.backgroundLinkColor,
+      border: Border.all(color: Colors.grey),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(_getIconForLink(item.linkType), size: item.fontSize, color: Colors.white),
+        const SizedBox(width: 6),
+        Text(item.text ?? '', 
+          style: TextStyle(
+            color: item.textColor,
+            fontFamily: item.fontFamily,
+            fontSize: item.fontSize,
+            fontWeight: item.fontWeight,
+          ),
         ),
-      ),
-    );
+      ],
+    ),
+  ),
+)
+
+        );
   }
   return const SizedBox.shrink();
+}
+
+IconData _getIconForLink(LinkType type) {
+  switch(type) {
+    case LinkType.email:
+      return Icons.email;
+    case LinkType.phone:
+      return Icons.phone;
+    case LinkType.website:
+      return Icons.web;
+    case LinkType.telegram:
+      return Bootstrap.telegram;
+    case LinkType.linkedin:
+      return Bootstrap.linkedin;
+    case LinkType.github:
+      return Bootstrap.github;
+    case LinkType.twitter:
+      return Bootstrap.twitter_x;
+  }
 }
 
 Widget _buildOpacitySlider() {
@@ -988,27 +1069,33 @@ Widget _buildOpacitySlider() {
           fillColor: Colors.grey[800],
           ),
           dropdownColor: Colors.grey[800],
-          value: elements[selectedIndex!].fontWeight,
+          value: elements[selectedIndex!].linkType,
           items: const [
             DropdownMenuItem(
-              value: FontWeight.normal,
+              value: LinkType.email,
               child: Text('Email', style: TextStyle(color: Colors.white))),
             DropdownMenuItem(
-              value: FontWeight.bold,
+              value: LinkType.phone,
               child: Text('Телефон', style: TextStyle(color: Colors.white))),
             DropdownMenuItem(
-              value: FontWeight.w300,
+              value: LinkType.website,
               child: Text('Сайт', style: TextStyle(color: Colors.white))),
             DropdownMenuItem(
-              value: FontWeight.w300,
+              value: LinkType.github,
               child: Text('Github', style: TextStyle(color: Colors.white))),
             DropdownMenuItem(
-              value: FontWeight.w300,
+              value: LinkType.telegram,
               child: Text('Telegram', style: TextStyle(color: Colors.white))),
+            DropdownMenuItem(
+              value: LinkType.twitter,
+              child: Text('Twitter', style: TextStyle(color: Colors.white))),
+              DropdownMenuItem(
+              value: LinkType.linkedin,
+              child: Text('Linkedin', style: TextStyle(color: Colors.white))),
           ],
           onChanged: (value) {
             if (value != null && selectedIndex != null) {
-              setState(() => elements[selectedIndex!].fontWeight = value);
+              setState(() => elements[selectedIndex!].linkType = value);
             }
           },
           style: const TextStyle(color: Colors.white),
@@ -1379,6 +1466,81 @@ Widget _buildOpacitySlider() {
   );
 }
 
+Widget _buildSoloColorPicker() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: SizedBox(
+              height: 56,
+              child: InkWell(
+                onTap: () async {
+                  final color = await showDialog<Color>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Выберите цвет'),
+                      content: SingleChildScrollView(
+                        child: ColorPicker(
+                          paletteType: PaletteType.hueWheel,
+                          pickerColor: elements[selectedIndex!].backgroundLinkColor,
+                          onColorChanged: (color) {
+                            if(selectedIndex != null) {
+                              setState(() {
+                                elements[selectedIndex!].backgroundLinkColor = color;
+                              });
+                            }
+                          }),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, backgroundLinkColor),
+                          child: const Text('OK'),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (color != null) {
+                    setState(() => backgroundLinkColor = color);
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey),
+                    color: Colors.grey[800],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: elements[selectedIndex!].backgroundLinkColor,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.white),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Цвет заднего фона',
+                          style: TextStyle(color: Colors.white),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
 
 
@@ -1565,6 +1727,10 @@ class EditableElement {
   String? imageUrl;
   ClipType clipType;
 
+  //Для ссылок
+  LinkType linkType;
+  Color backgroundLinkColor;
+
   EditableElement({
     required this.type,
     required this.matrix,
@@ -1592,6 +1758,10 @@ class EditableElement {
     this.imageOpacity = 1.0,
     this.imageUrl,
     this.clipType = ClipType.rectangle,
+
+    //ссылка
+    this.linkType = LinkType.email,
+    this.backgroundLinkColor = const Color(0xFF424242),
   }) {
     // Если текст — выставляем базовые размеры
     if (type == ElementType.text) {
@@ -1628,6 +1798,10 @@ extension EditableElementMapper on EditableElement {
       "image_url": imageUrl,
       "image_opacity": imageOpacity,
       "clip_type": clipType.name,
+
+      //link
+      "link_type": linkType.name,
+      "background_link_color": '#${backgroundLinkColor.value.toRadixString(16).padLeft(8, '0')}',
     };
   }
 }

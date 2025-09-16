@@ -207,6 +207,8 @@ class CardElement {
   final String? imageUrl;
   final double imageOpacity;
   final String? clipType;
+  final String linkType;
+  final String? backgroundLinkColor;
 
   CardElement({
     required this.type,
@@ -226,6 +228,8 @@ class CardElement {
     this.imageUrl,
     required this.imageOpacity,
     this.clipType,
+    required this.linkType,
+    this.backgroundLinkColor,
   });
 
   factory CardElement.fromJson(Map<String, dynamic> json) {
@@ -263,6 +267,8 @@ class CardElement {
       imageUrl: json['image_url'] as String?,
       imageOpacity: (json['image_opacity'] as num?)?.toDouble() ?? 1.0,
       clipType: json['clip_type'] as String? ?? '',
+      linkType: json['link_type'] as String? ?? '',
+      backgroundLinkColor: json['background_link_color'] as String?,
     );
   }
 
@@ -309,6 +315,8 @@ class CardElement {
       imageUrl: imageUrl,
       imageOpacity: imageOpacity,
       clipType: ClipType.values.firstWhere((e) => e.name == clipType),
+      linkType: LinkType.values.firstWhere((e) => e.name == linkType),
+      backgroundLinkColor: backgroundLinkColor != null ? parseColor(backgroundLinkColor!) : const Color(0xFF424242),
       );
   }
 
