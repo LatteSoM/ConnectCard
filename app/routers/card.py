@@ -40,6 +40,8 @@ class EditableElementBase(BaseModel):
     image_url: Optional[str] = None
     image_opacity: float = 1.0
     clip_type: Optional[str] = None
+    link_type: Optional[str] = None
+    background_link_color: Optional[str] = None
 
 class EditableElementResponse(EditableElementBase):
     id: UUID
