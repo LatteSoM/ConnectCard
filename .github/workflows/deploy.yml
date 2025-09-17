@@ -1,4 +1,4 @@
-name: Build and Push Docker Image
+name: Build and Deploy to Portainer
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,38 +22,53 @@ jobs:
         with:
           context: .
           push: true
-          tags: lnqvd/connectcard_api_image:latest
+          tags: |
+            lnqvd/connectcard_api_image:latest
+            lnqvd/connectcard_api_image:${{ github.sha }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Debug auth
-        run: |
-          echo "Username: ${{ secrets.PORTAINER_USER }}"
-          echo "Testing auth..."
-          curl -k -v -X POST "https://45.12.255.231:9443/api/auth" \
-            -H "Content-Type: application/json" \
-            -d "{\"Username\":\"${{ secrets.PORTAINER_USER }}\",\"Password\":\"${{ secrets.PORTAINER_PASSWORD }}\"}"
-
-      - name: Get new JWT token
+      - name: Get JWT token from Portainer
         run: |
           RESPONSE=$(curl -k -s -X POST "https://45.12.255.231:9443/api/auth" \
             -H "Content-Type: application/json" \
             -d "{\"Username\":\"${{ secrets.PORTAINER_USER }}\",\"Password\":\"${{ secrets.PORTAINER_PASSWORD }}\"}")
-          
-          JWT_TOKEN=$(echo $RESPONSE | jq -r '.jwt')
-          if [ "$JWT_TOKEN" = "null" ]; then
-            JWT_TOKEN=$(echo $RESPONSE | jq -r '.accessToken')
-          fi
-          
-          echo "JWT_TOKEN=$JWT_TOKEN" >> $GITHUB_ENV
-          echo "Token obtained successfully"
 
-      - name: Redeploy stack in Portainer
+          echo "Full response: $RESPONSE"
+
+          JWT_TOKEN=$(echo $RESPONSE | jq -r '.jwt // .access_token // .accessToken')
+          if [ -z "$JWT_TOKEN" ] || [ "$JWT_TOKEN" = "null" ]; then
+            echo "❌ Failed to obtain JWT token"
+            exit 1
+          fi
+
+          echo "JWT_TOKEN=$JWT_TOKEN" >> $GITHUB_ENV
+
+      - name: Get current stack definition
         run: |
-          curl -k -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1" \
+          STACK=$(curl -k -s \
+            -H "Authorization: Bearer ${{ env.JWT_TOKEN }}" \
+            "https://45.12.255.231:9443/api/stacks/2")
+          
+          echo "$STACK" | jq -r '.StackFileContent' > stack.yml
+
+      - name: Update stack with new image tag
+        run: |
+          NEW_TAG=${{ github.sha }}
+          UPDATED_STACK=$(cat stack.yml | jq -Rs .)
+
+          curl -k -X PUT "https://45.12.255.231:9443/api/stacks/2?endpointId=1" \
             -H "Authorization: Bearer ${{ env.JWT_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"pullImage": true}'
-          echo "✅ Redeploy triggered successfully"
+            -d "{
+              \"stackFileContent\": $UPDATED_STACK,
+              \"prune\": true,
+              \"env\": [
+                {\"name\": \"IMAGE_TAG\", \"value\": \"$NEW_TAG\"}
+              ],
+              \"pullImage\": true
+            }"
+
+          echo "✅ Stack updated with IMAGE_TAG=$NEW_TAG"
