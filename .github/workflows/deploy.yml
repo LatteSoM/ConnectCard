@@ -23,8 +23,8 @@ jobs:
         with:
           context: .
           push: true
-          tags: your_dockerhub_username/your_api_image:latest
+          tags: lnqvd/connectcard_api_image:latest 
 
-      - name: Run tests  
-        run: |
-          docker run --rm your_dockerhub_username/your_api_image:latest pytest  # Если есть тесты в коде (рекомендую добавить unit tests с pytest)
+      # - name: Run tests  
+      #   run: |
+      #     docker run --rm lnqvd/connectcard_api_image:latest  pytest  # Если есть тесты в коде (рекомендую добавить unit tests с pytest)
