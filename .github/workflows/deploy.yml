@@ -29,14 +29,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Redeploy stack using pre-created token
+      - name: Update stack with new image
         run: |
-          curl -k -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1" \
+          # Сначала получаем текущую конфигурацию stack
+          STACK_CONFIG=$(curl -k -s -X GET "https://45.12.255.231:9443/api/stacks/2" \
+            -H "Authorization: Bearer ${{ secrets.PORTAINER_ACCESS_TOKEN }}")
+          
+          # Обновляем stack с принудительным pull
+          curl -k -X PUT "https://45.12.255.231:9443/api/stacks/2?endpointId=1" \
             -H "Authorization: Bearer ${{ secrets.PORTAINER_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
+            -d "$STACK_CONFIG" \
             -d "{\"pullImage\": true, \"prune\": true}"
-          echo "Redeploy triggered successfully"
-
-      - name: Check if new image was pushed
-        run: |
-          curl -s "https://hub.docker.com/v2/repositories/lnqvd/connectcard_api_image/tags/latest/" | jq .digest
