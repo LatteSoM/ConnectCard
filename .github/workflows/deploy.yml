@@ -53,7 +53,7 @@ jobs:
 
       - name: Redeploy stack
         run: |
-          curl -k -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1" \
+          curl -k -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1&method=repository" \
             -H "Authorization: Bearer ${{ env.JWT_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"pullImage\": true}"
