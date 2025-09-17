@@ -51,10 +51,10 @@ jobs:
           echo "JWT_TOKEN=$JWT_TOKEN" >> $GITHUB_ENV
           echo "Token obtained successfully"
 
-      - name: Redeploy stack
+      - name: Redeploy stack in Portainer
         run: |
-          curl -k -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1&method=repository" \
+          curl -k -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1" \
             -H "Authorization: Bearer ${{ env.JWT_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"pullImage\": true}"
-          echo "Redeploy triggered successfully"
+            -d '{"pullImage": true}'
+          echo "✅ Redeploy triggered successfully"
