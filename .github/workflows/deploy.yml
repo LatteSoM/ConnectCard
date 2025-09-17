@@ -23,35 +23,16 @@ jobs:
         with:
           context: .
           push: true
-          tags: lnqvd/connectcard_api_image:latest 
-
-      # - name: Run tests  
-      #   run: |
-      #     docker run --rm lnqvd/connectcard_api_image:latest  pytest  # Если есть тесты в коде (рекомендую добавить unit tests с pytest)
+          tags: lnqvd/connectcard_api_image:latest
 
   deploy:
     runs-on: ubuntu-latest
+    needs: build
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Build and push image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: true
-        tags: lnqvd/connectcard_api_image:latest 
-
-    - name: Get Portainer JWT token
-      run: |
-        TOKEN=$(curl -s -X POST "https://45.12.255.231:9443/api/auth" \
-          -H "Content-Type: application/json" \
-          -d "{\"Username\":\"${{ secrets.PORTAINER_USER }}\",\"Password\":\"${{ secrets.PORTAINER_PASSWORD }}\"}" \
-          | jq -r '.jwt')
-        echo "TOKEN=$TOKEN" >> $GITHUB_ENV
-
-    - name: Redeploy stack
-      run: |
-        curl -X POST "https://45.12.255.231:9443/api/stacks/your-stack-id/redeploy" \
-          -H "Authorization: Bearer ${{ env.TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d "{\"endpointId\": 1, \"pullImage\": true}"
+      - name: Redeploy stack using pre-created token
+        run: |
+          curl -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1" \
+            -H "Authorization: Bearer ${{ secrets.PORTAINER_ACCESS_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"pullImage\": true}"
+          echo "Redeploy triggered successfully"
