@@ -31,7 +31,7 @@ jobs:
     steps:
       - name: Redeploy stack using pre-created token
         run: |
-          curl -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1" \
+          curl -k -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1" \
             -H "Authorization: Bearer ${{ secrets.PORTAINER_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
             -d "{\"pullImage\": true}"
