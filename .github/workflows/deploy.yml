@@ -34,5 +34,9 @@ jobs:
           curl -k -X POST "https://45.12.255.231:9443/api/stacks/2/redeploy?endpointId=1" \
             -H "Authorization: Bearer ${{ secrets.PORTAINER_ACCESS_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d "{\"pullImage\": true}"
+            -d "{\"pullImage\": true, \"prune\": true}"
           echo "Redeploy triggered successfully"
+
+      - name: Check if new image was pushed
+        run: |
+          curl -s "https://hub.docker.com/v2/repositories/lnqvd/connectcard_api_image/tags/latest/" | jq .digest
