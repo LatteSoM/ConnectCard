@@ -1,5 +1,6 @@
 import React from "react";
 import classes from "./Home.module.css";
+import { ClockCircleOutlined } from '@ant-design/icons';
 
 const Home = () => (
   <div className={classes.container}>
@@ -300,9 +301,13 @@ const Home = () => (
               </div>
             </div>
             <div className={`${classes.timelineItem} ${classes.inProgress}`}>
-              <div className={classes.timelineIcon}>
+              {/* <div className={classes.timelineIcon}>
                 <span>⏳</span>
-              </div>
+              </div> */}
+              {/* <div className={classes.timelineIcon}>
+                <i className="bi bi-hourglass-split text-white"></i>
+              </div> */}
+              <ClockCircleOutlined className={classes.timelineIcon} style={{ fontSize: '24px' }} />
               <div className={classes.timelineContent}>
                 <h4>Деплой + тестирование</h4>
                 <p>Ноябрь 2025: CI/CD, бета-тестирование, фикс багов.</p>
