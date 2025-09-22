@@ -128,7 +128,7 @@ button {
   border-radius: 1rem;
   padding: 2rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
-  
+
 }
 
 .card h4 {
@@ -616,6 +616,98 @@ button {
 
 .timelineItem.future:nth-child(even) .timelineIcon span {
   transform: rotate(180deg);
+}
+
+/* Добавьте эти классы в конец Home.module.css для side menu */
+
+.sideMenu {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background-color: #111827;
+  transition: left 0.3s ease-in-out;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+}
+
+.sideMenu.open {
+  left: 0;
+}
+
+.sideMenuHeader {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(147, 51, 234, 0.2);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.closeIcon {
+  font-size: 1.5rem;
+  color: #f3f4f6;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.closeIcon:hover {
+  color: #a855f7;
+}
+
+.sideNav {
+  flex: 1;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sideNav a {
+  color: #f3f4f6;
+  text-decoration: none;
+  padding: 1rem;
+  border-radius: 8px;
+  transition: background-color 0.2s, color 0.2s;
+  font-size: 1.1rem;
+}
+
+.sideNav a:hover {
+  background-color: rgba(147, 51, 234, 0.1);
+  color: #a855f7;
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (max-width: 768px) {
+  .sideMenu {
+    width: 250px;
+    left: -250px;
+  }
+
+  .burgerMenu {
+    display: block !important;
+  }
+
+  .nav {
+    display: none !important;
+  }
 }
 
 
