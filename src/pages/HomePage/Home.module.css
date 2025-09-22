@@ -2,9 +2,21 @@
 /* =============================================================== */
 /* HEADER */
 
-.header {
-  background-color: #111827; /* gray-900 */
-  border-bottom: 1px solid rgba(147, 51, 234, 0.2); /* purple-600/20 */
+.logoTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+  margin: 0;
+}
+
+button {
+  border-width: 0;
+}
+
+.logoSubtitle {
+  font-size: 0.875rem;
+  color: #9ca3af;
+  margin: 0;
 }
 
 .headerInner {
@@ -16,49 +28,52 @@
   padding: 1rem;
 }
 
-.headerLeft {
+.leftSide {
   display: flex;
   align-items: center;
   gap: 1rem;
 }
 
-.logoTitle {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #fff;
-  margin: 0;
-}
-
-.logoSubtitle {
-  font-size: 0.875rem;
-  color: #9ca3af;
-  margin: 0;
-}
-
-.logoBox {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-color: #9333ea; /* purple-600 */
-  color: white;
+.headerLogo {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: bold;
+  gap: 1rem;
+}
+
+.logoImg {
+  width: 7em;
+  height: 7em;
+  border-radius: 8px;
+}
+
+.burgerMenu {
+  display: none;
+  font-size: 1.5rem;
+  color: #fff;
+  cursor: pointer;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
 }
 
 .nav a {
   transition: color 0.2s;
+  color: #f3f4f6;
+  text-decoration: none;
 }
 
 .nav a:hover {
   color: #a855f7; 
 }
 
+
 .container {
   min-height: 100vh;
   background-color: #000;
-  color: #f3f4f6; /* gray-100 */
+  color: #f3f4f6; 
   font-family: system-ui, -apple-system, sans-serif;
 }
 
@@ -111,8 +126,9 @@
   background-color: #111827;
   border: 1px solid rgba(147, 51, 234, 0.2);
   border-radius: 1rem;
-  padding: 1.5rem;
+  padding: 2rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+  
 }
 
 .card h4 {
@@ -210,8 +226,8 @@
 }
 
 .avatar img {
-  width: 64px;
-  height: 64px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
 }
 
@@ -283,8 +299,9 @@
 
 .cta {
   background-color: #111827;
-  padding: 4rem 0;
+  padding: 4rem 1em;
   text-align: center;
+  border-radius: 8px;
 }
 
 .ctaInner {
@@ -538,6 +555,48 @@
 
   .timelineContent p {
     font-size: 0.85rem;
+  }
+
+  .burgerMenu {
+    display: block;
+  }
+
+  .nav a {
+    display: none;
+  }
+
+  .leftSide {
+    justify-content: space-between;
+    align-items: center;
+    /* width: 100%; */
+  }
+
+  .headerLogo {
+    margin-left: auto;
+    align-items: center;
+  }
+
+  .logoTitle{
+    display: none;
+
+  }
+
+  .logoSubtitle {
+    display: none;
+  }
+
+  .logoImg {
+    width: 5em;
+    height: 5em;
+    border-radius: 8px;
+  }
+
+  .footerLinks {
+    flex-direction: column;
+  }
+
+  .sectionTitle {
+    font-size: 2rem;
   }
 }
 

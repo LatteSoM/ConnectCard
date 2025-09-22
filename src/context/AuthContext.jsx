@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     form.append("username", username);
     form.append("password", password);
 
-    const response = await axios.post("http://127.0.0.1:8002/auth/token", form, {
+    const response = await axios.post("http://172.18.0.4:8000/auth/token", form, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await axios.get("http://127.0.0.1:8002/auth/current_user", {
+      const response = await axios.get("http://172.18.0.4:8000/auth/current_user", {
         headers: { Authorization: `Bearer ${access}` },
       });
       setUserLogin(response.data);
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await axios.post("http://127.0.0.1:8002/auth/refresh", storedRefreshToken, {
+      const response = await axios.post("http://172.18.0.4:8000/auth/refresh", storedRefreshToken, {
         headers: { 'Content-Type': 'application/json' },
       });
 

@@ -58,7 +58,7 @@ const Registration = () => {
       setErrors({});
       setServerError('');
 
-      const response = await axios.post('http://127.0.0.1:8002/auth/register', {
+      const response = await axios.post('http://172.18.0.4:8000/auth/register', {
         name: form.name.trim(),
         email: form.email.trim(),
         login: form.login.trim(),

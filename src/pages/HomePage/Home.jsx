@@ -1,18 +1,26 @@
 import React from "react";
 import classes from "./Home.module.css";
 import { ClockCircleOutlined } from '@ant-design/icons';
+import { MenuOutlined } from '@ant-design/icons';
+import logo from "../../assets/LogoNight.svg";
+import { Button } from "antd";
+import ava from "../../assets/testusericon1.jpg"
+
 
 const Home = () => (
   <div className={classes.container}>
     <header className={classes.header}>
       <div className={classes.headerInner}>
-        <div className={classes.headerLeft}>
-          <div className={classes.logoBox}>CC</div>
-          <div>
-            <h1 className={classes.logoTitle}>ConnectCard</h1>
-            <p className={classes.logoSubtitle}>
-              Цифровые визитки для профессионального нетворкинга
-            </p>
+        <div className={classes.leftSide}>
+          <MenuOutlined className={classes.burgerMenu} />
+          <div className={classes.headerLogo}>
+            <img src={logo} alt="ConnectCard Logo" className={classes.logoImg} />
+            <div>
+              <h1 className={classes.logoTitle}>ConnectCard</h1>
+              <p className={classes.logoSubtitle}>
+                Цифровые визитки для профессионального нетворкинга
+              </p>
+            </div>
           </div>
         </div>
         <nav className={classes.nav}>
@@ -50,7 +58,7 @@ const Home = () => (
             </li>
             <li className={classes.checkboxItem}>
               <span className={classes.checkboxIcon}>✓</span>
-              <span>Статистика просмотров и интеграции с CRM</span>
+              <span>Детальная статистика просмотров</span>
             </li>
           </ul>
 
@@ -59,7 +67,7 @@ const Home = () => (
               Попробовать бесплатно
             </a>
             <a href="#pricing" className={classes.buttonSecondary}>
-              Смотреть тарифы
+              Перейти к тарифам
             </a>
           </div>
 
@@ -73,7 +81,7 @@ const Home = () => (
           <div className={classes.card}>
             <div className={classes.cardHeader}>
               <div className={classes.avatar}>
-                <img src="https://via.placeholder.com/64" alt="avatar" />
+                <img src={ava} alt="avatar" />
               </div>
               <div className={classes.cardHeaderText}>
                 <h3>Иван Иванов</h3>
@@ -92,10 +100,10 @@ const Home = () => (
               <div>Навыки: React, TypeScript, UI/UX</div>
             </div>
 
-            <div className={classes.cardFooter}>
+            {/* <div className={classes.cardFooter}>
               <div>QR для обмена</div>
               <div className={classes.qrBox}>QR</div>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
@@ -141,15 +149,15 @@ const Home = () => (
             <h4 className={classes.textPurple}>Что входит в MVP</h4>
             <ul className={classes.textGray}>
               <li>Создание и редактирование визитки</li>
-              <li>Генерация QR и обмен</li>
+              <li>Генерация QR и обмен контактами</li>
               <li>Сканер QR в приложении</li>
-              <li>Простая статистика просмотров</li>
+              <li>Объемная статистика просмотров</li>
             </ul>
           </div>
           <div className={classes.card}>
             <h4 className={classes.textPurple}>Технологии</h4>
             <ul className={classes.textGray}>
-              <li>Backend: FastAPI + Django (авторизация)</li>
+              <li>Backend: FastAPI </li>
               <li>Mobile: Flutter</li>
               <li>DB: PostgreSQL</li>
               <li>Хранение файлов: S3-совместимое хранилище</li>
@@ -232,17 +240,19 @@ const Home = () => (
               Безопасно ли хранить данные?
             </summary>
             <p className={classes.textGray}>
-              Да. В MVP мы храним минимальные данные, используем шифрование на
-              уровне хранилища и защиту доступа через OAuth2.
+              Да. Мы используем защиту доступа через OAuth2. Защита 
+              персональных данных пользователя в соответствии с Федеральным закон от 
+              27 июля 2006 года № 149-ФЗ "Об информации, информационных технологиях 
+              и о защите информации", и Федеральный закон от 27 июля 2006 года № 152-ФЗ "О персональных данных"
             </p>
           </details>
           <details className={classes.card}>
             <summary className={classes.textPurple}>
-              Можно ли интегрироваться с CRM?
+              Какая статистические данные доступны?
             </summary>
             <p className={classes.textGray}>
-              Да — через API можно экспортировать контакты и события в любую CRM
-              систему.
+              Просматривайте подробные метрики по своей визитке: например статистика просмотров,
+              по типу устройств, популярные действия, и статистика переходов по указанным ресурсам.
             </p>
           </details>
         </div>
@@ -301,12 +311,6 @@ const Home = () => (
               </div>
             </div>
             <div className={`${classes.timelineItem} ${classes.inProgress}`}>
-              {/* <div className={classes.timelineIcon}>
-                <span>⏳</span>
-              </div> */}
-              {/* <div className={classes.timelineIcon}>
-                <i className="bi bi-hourglass-split text-white"></i>
-              </div> */}
               <ClockCircleOutlined className={classes.timelineIcon} style={{ fontSize: '24px' }} />
               <div className={classes.timelineContent}>
                 <h4>Деплой + тестирование</h4>
@@ -362,11 +366,11 @@ const Home = () => (
             на следующем мероприятии.
           </p>
           <div className={classes.heroButtons}>
-            <a id="signup" className={classes.buttonPrimary}>
+            <button className={classes.buttonPrimary}>
               Создать визитку
-            </a>
+            </button>
             <a href="#pricing" className={classes.buttonSecondary}>
-              Посмотреть тарифы
+              К тарифам
             </a>
           </div>
           <p className={classes.textGraySmall}>
@@ -378,8 +382,8 @@ const Home = () => (
 
     <footer className={classes.footer}>
       <div className={classes.footerInner}>
-        <div>© {new Date().getFullYear()} ConnectCard — Все права защищены</div>
         <div className={classes.footerLinks}>
+          <div>© {new Date().getFullYear()} ConnectCard — Все права защищены</div>
           <a href="#">Политика конфиденциальности</a>
           <a href="#">Условия использования</a>
           <a href="#">Контакты</a>
