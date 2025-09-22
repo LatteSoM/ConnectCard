@@ -58,7 +58,7 @@ const Home = () => (
               Попробовать бесплатно
             </a>
             <a href="#pricing" className={classes.buttonSecondary}>
-              Смотреть <br /> тарифы
+              Смотреть тарифы
             </a>
           </div>
 
@@ -247,6 +247,108 @@ const Home = () => (
         </div>
       </section>
 
+      <section id="roadmap" className={classes.section}>
+        <h3 className={classes.sectionTitle}>Дорожная карта</h3>
+        <p className={classes.textGray}>
+          План развития ConnectCard: от запуска до полноценного релиза с фокусом на масштабируемость и пользовательский опыт.
+        </p>
+        <div className={classes.timelineContainer}>
+          <div className={classes.timeline}>
+            <div className={`${classes.timelineItem} ${classes.completed}`}>
+              <div className={classes.timelineIcon}>
+                <span>✓</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Старт проекта</h4>
+                <p>Июль 2025: Формирование команды и планирование MVP.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.completed}`}>
+              <div className={classes.timelineIcon}>
+                <span>✓</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Разработка дизайна</h4>
+                <p>Июль 2025: UI/UX прототипы и брендинг.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.completed}`}>
+              <div className={classes.timelineIcon}>
+                <span>✓</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Базовый API</h4>
+                <p>Август 2025: Backend на FastAPI с аутентификацией.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.completed}`}>
+              <div className={classes.timelineIcon}>
+                <span>✓</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Мобильная версия (Flutter)</h4>
+                <p>Октябрь 2025: QR-сканер, обмен визитками, базовая аналитика.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.completed}`}>
+              <div className={classes.timelineIcon}>
+                <span>✓</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Web версия</h4>
+                <p>Октябрь 2025: Дашборд для создания и управления визитками.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.inProgress}`}>
+              <div className={classes.timelineIcon}>
+                <span>⏳</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Деплой + тестирование</h4>
+                <p>Ноябрь 2025: CI/CD, бета-тестирование, фикс багов.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.future}`}>
+              <div className={classes.timelineIcon}>
+                <span>→</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Выпуск MVP</h4>
+                <p>Декабрь 2025: Релиз на App Store/Google Play, freemium-модель.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.future}`}>
+              <div className={classes.timelineIcon}>
+                <span>→</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Собрать обратную связь</h4>
+                <p>Январь 2026: Опросы, A/B-тесты, обновления на основе фидбека.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.future}`}>
+              <div className={classes.timelineIcon}>
+                <span>→</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Доработка продукта</h4>
+                <p>Февраль–Март 2026: Интеграции CRM, расширенная аналитика, премиум-функции.</p>
+              </div>
+            </div>
+            <div className={`${classes.timelineItem} ${classes.future}`}>
+              <div className={classes.timelineIcon}>
+                <span>→</span>
+              </div>
+              <div className={classes.timelineContent}>
+                <h4>Релиз v1.0</h4>
+                <p>Апрель 2026: Полный запуск, маркетинг, партнерства.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
       <section className={classes.cta}>
         <div className={classes.ctaInner}>
           <h3 className={classes.sectionTitle}>Готовы упростить нетворкинг?</h3>
@@ -256,7 +358,7 @@ const Home = () => (
           </p>
           <div className={classes.heroButtons}>
             <a id="signup" className={classes.buttonPrimary}>
-              Создать <br /> визитку
+              Создать визитку
             </a>
             <a href="#pricing" className={classes.buttonSecondary}>
               Посмотреть тарифы
