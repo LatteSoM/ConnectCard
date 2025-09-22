@@ -31,9 +31,10 @@ const App = () => {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<Home />} />
 
         <Route element={<MainLayout />}>
-          <Route path="/" element={<Home />} />
+          {/* <Route path="/" element={<Home />} /> */}
           <Route path="/home" element={<Home />} />
           <Route path="/contacts" element={<Contacts />} />
           <Route path="/cards" element={<Cards />} />
@@ -63,96 +64,3 @@ const App = () => {
 };
 
 export default App;
-
-
-
-
-
-// import { isValidElement, useEffect, useState } from 'react'
-// import reactLogo from './assets/react.svg'
-// import viteLogo from '/vite.svg'
-// import './App.css'
-
-// import { Breadcrumb, Layout, Menu, theme } from 'antd';
-
-// const { Header, Content, Footer } = Layout;
-
-// const items = Array.from({ length: 3 }).map((_, index) => ({
-//   key: index + 1,
-//   label: `nav ${index + 1}`,
-// }));
-
-// const headerItems = [{key: '1', label: 'Главная'}, {key: '2', label: 'Контакты'}, {key: '3', label: 'Мои визитки'}];
-
-
-
-// const App = () => {
-//   // const [count, setCount] = useState(0);
-
-//   {/* <Header />
-//     <main>
-//       <div>
-//         <span>
-//           ето спан
-//         </span>
-//       </div>
-
-//     </main>
-//     <footer>
-//       <div>
-//         <span>
-//           ето футер
-//         </span>
-//       </div>
-//     </footer> */}
-
-//   const {
-//     token: { colorBgContainer, borderRadiusLG },
-//   } = theme.useToken();
-
-
-//   return (
-//     <Layout>
-
-//       <Header style={{ display: 'flex', alignItems: 'center',height: '3rem' }}>
-//         <div className="demo-logo" />
-//         <Menu
-//           theme="dark"
-//           mode="horizontal"
-//           defaultSelectedKeys={['1']}
-//           items={headerItems}
-//           style={{ flex: 1, minWidth: 0,height: '100%', display: 'flex', alignItems: 'center',
-
-//            }}
-//         />
-//       </Header>
-
-//       <Content style={{ padding: '0 48px' }}>
-
-//         <Breadcrumb
-//           style={{ margin: '16px 0' }}
-//           items={[{ title: 'Home' }, { title: 'List' }, { title: 'App' }]}
-//         />
-
-//         <div
-//           style={{
-//             background: colorBgContainer,
-//             minHeight: 280,
-//             padding: 24,
-//             borderRadius: borderRadiusLG,
-//             border: '1px solid #1B1A20',
-//           }}
-//         >
-//           Тут типа будет чето контент там да катчественнный продукт так называемый
-//         </div>
-//       </Content>
-
-//       <Footer style={{ textAlign: 'center' }}>
-//         ConnectCard ©{new Date().getFullYear()}
-//       </Footer>
-
-//     </Layout>
-//   );
-// }
-
-// export default App

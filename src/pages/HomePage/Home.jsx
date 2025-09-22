@@ -1,261 +1,284 @@
-// import classes from './Home.module.css';
-
-// const Home = () => (
-//     <div className={classes.container}>
-
-//         <h1>ЭТОТ КРИНЖ ПЕРЕДЕЛАЮ</h1>
-//         <h1 className={classes.heading}>🎯 Что такое ConnectCard и зачем мы его создаём?</h1>
-
-//         <p className={classes.paragraph}>
-//             В современном мире бумажные визитки теряют актуальность. Люди всё чаще знакомятся и обмениваются контактами на мероприятиях, в коворкингах, на конференциях — и делают это через смартфоны.
-//             Обычные способы — Telegram, LinkedIn, Instagram — работают, но обмениваться каждым контактом по отдельности бывает долго и неудобно.
-//             Хочется решения, где достаточно отсканировать один QR-код, чтобы сразу поделиться всеми своими контактами и ссылками в одном месте.
-//         </p>
-
-//         <h2 className={classes.subheading}>💡 ConnectCard — это платформа для создания персонализированных цифровых визиток с акцентом на профессиональный нетворкинг.</h2>
-
-//         <h3 className={classes.listTitle}>✅ Что умеет ConnectCard:</h3>
-//         <ul className={classes.list}>
-//             <li>📇 Создание визиток с фото, ссылками, навыками и контактами.</li>
-//             <li>➤ Создавайте визитку с уникальным дизайном или выбирайте из готовых шаблонов.</li>
-//             <li>➤ Сохраняйте чужие визитки, добавляя их в свои контакты.</li>
-//             <li>📲 QR-код для обмена контактами в одно касание.</li>
-//             <li>📍 Поиск людей по событиям и геолокации.</li>
-//             <li>🔔 Интеграция с Telegram для мгновенного обмена и уведомлений.</li>
-//         </ul>
-
-//         <h3 className={classes.listTitle}>🇷🇺 Почему именно для российского рынка:</h3>
-//         <ul className={classes.list}>
-//             <li>➤ Растущая культура нетворкинга среди фрилансеров и предпринимателей.</li>
-//             <li>➤ Устаревание бумажных визиток и отсутствие локальных удобных решений.</li>
-//             <li>➤ Упор на простоту и быструю связь именно в профессиональной среде.</li>
-//         </ul>
-
-//         <p className={classes.paragraph}>
-//             🤝 <strong>Цель ConnectCard</strong> — упростить обмен контактами и дать людям инструмент для реального, живого общения на мероприятиях и в бизнесе.
-//         </p>
-
-//         <p className={classes.paragraph}>
-//             💬 Оставляйте обратную связь прямо в комментариях — нам важно ваше мнение!
-//         </p>
-
-//         <h3 className={classes.listTitle}>🎯 Анализ конкурентов:</h3>
-//         <ul className={classes.list}>
-//             <li>➤ ❗ Ориентированы на корпоративных клиентов.</li>
-//             <li>➤ 🎨 Нет возможности создавать уникальный стиль самостоятельно.</li>
-//             <li>➤ 📱 Приложения устаревшие и неудобные, интерфейс не интуитивный.</li>
-//         </ul>
-
-//         <h3 className={classes.listTitle}>✅ Что предлагает ConnectCard:</h3>
-//         <ul className={classes.list}>
-//             <li>➤ 🎨 Полная свобода дизайна.</li>
-//             <li>➤ 📁 Несколько визиток.</li>
-//             <li>➤ 📲 Современный UX.</li>
-//             <li>➤ 🔄 Сохранение контактов.</li>
-//             <li>➤ 📍 Поиск по событиям.</li>
-//             <li>➤ 💡 Гибкость и независимость.</li>
-//         </ul>
-
-//         <p className={classes.highlight}>
-//             🌐 <strong>ConnectCard</strong> — это не просто электронная визитка. Это инструмент, который сочетает дизайн, удобство, мобильность и свободу — именно то, чего так не хватает на рынке РФ.
-//         </p>
-//     </div>
-// );
-
-
-import { Grid, Typography, Box } from '@mui/material';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { UserOutlined, QrcodeOutlined, TeamOutlined, GlobalOutlined } from '@ant-design/icons';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAddressCard, faDisplay, faPalette, faSave, faSearch } from '@fortawesome/free-solid-svg-icons';
-import MyButton from '../../components/Button/Button.jsx';
-import classes from './Home.module.css';
-
-// Responsive font size function
-const responsiveFontSize = (minSize, maxSize, vwFactor) => {
-  return `clamp(${minSize}px, ${vwFactor}vw, ${maxSize}px)`;
-};
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.2, delayChildren: 0.3 },
-  },
-};
-
-const childVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
-};
+import React from "react";
+import classes from "./Home.module.css";
 
 const Home = () => (
-  <div className={classes.wrapper}>
-    <motion.div
-      initial={{ opacity: 0, y: 50 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8 }}
-      className={classes.hero}
-    >
-      <div className={classes.titleBlock}>
-        <div className={classes.titleBlockLogo}>
-          <img src="/src/assets/LogoNight.svg" alt="ConnectCard Logo" />
-        </div>
-        <div className={classes.titleBlockText}>
-          <div className={classes.title}>
-            Connect<span>Card</span>
+  <div className={classes.container}>
+    <header className={classes.header}>
+      <div className={classes.headerInner}>
+        <div className={classes.headerLeft}>
+          <div className={classes.logoBox}>CC</div>
+          <div>
+            <h1 className={classes.logoTitle}>ConnectCard</h1>
+            <p className={classes.logoSubtitle}>
+              Цифровые визитки для профессионального нетворкинга
+            </p>
           </div>
-          <div className={classes.subtitle}>Ваши связи — в одном касании</div>
+        </div>
+        <nav className={classes.nav}>
+          <a href="#features">Функции</a>
+          <a href="#pricing">Тарифы</a>
+          <a href="#mvp">MVP</a>
+          <a href="#faq">FAQ</a>
+          <button className={classes.buttonPrimary}>Войти</button>
+        </nav>
+      </div>
+    </header>
+
+    <main className={classes.main}>
+      <section className={classes.hero}>
+        <div className={classes.heroText}>
+          <h1 className={classes.sectionTitle}>
+            Создавайте и обменивайтесь цифровыми визитками за 3 секунды
+          </h1>
+          <p className={classes.textGray}>
+            ConnectCard — мобильное и веб-приложение для фрилансеров,
+            предпринимателей и специалистов, которые ценят быстрый и современный
+            нетворкинг на мероприятиях и конференциях.
+          </p>
+
+          <ul className={classes.checkboxList}>
+            <li className={classes.checkboxItem}>
+              <span className={classes.checkboxIcon}>✓</span>
+              <span>
+                Создавайте кастомные визитки с фото, ссылками на портфолио и соцсети
+              </span>
+            </li>
+            <li className={classes.checkboxItem}>
+              <span className={classes.checkboxIcon}>✓</span>
+              <span>Генерация QR-кода для мгновенного обмена контактом</span>
+            </li>
+            <li className={classes.checkboxItem}>
+              <span className={classes.checkboxIcon}>✓</span>
+              <span>Статистика просмотров и интеграции с CRM</span>
+            </li>
+          </ul>
+
+          <div className={classes.heroButtons}>
+            <a href="#signup" className={classes.buttonPrimary}>
+              Попробовать бесплатно
+            </a>
+            <a href="#pricing" className={classes.buttonSecondary}>
+              Смотреть <br /> тарифы
+            </a>
+          </div>
+
+          <div className={classes.heroNote}>
+            Идеально для конференций, митапов и бизнес-завтраков — быстрое добавление
+            в контакты без бумажных визиток.
+          </div>
+        </div>
+
+        <div className={classes.heroCard}>
+          <div className={classes.card}>
+            <div className={classes.cardHeader}>
+              <div className={classes.avatar}>
+                <img src="https://via.placeholder.com/64" alt="avatar" />
+              </div>
+              <div className={classes.cardHeaderText}>
+                <h3>Иван Иванов</h3>
+                <p>Frontend-разработчик • Москва</p>
+              </div>
+            </div>
+
+            <div className={classes.cardBody}>
+              <div>
+                Портфолио:{" "}
+                <a className={classes.textPurple} href="#">
+                  ivan.dev
+                </a>
+              </div>
+              <div>Email: ivan@dev.example</div>
+              <div>Навыки: React, TypeScript, UI/UX</div>
+            </div>
+
+            <div className={classes.cardFooter}>
+              <div>QR для обмена</div>
+              <div className={classes.qrBox}>QR</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" className={classes.section}>
+        <h3 className={classes.sectionTitle}>Ключевые функции</h3>
+        <div className={classes.grid3}>
+          <div className={classes.card}>
+            <h4 className={classes.textPurple}>Кастомизация</h4>
+            <p className={classes.textGray}>
+              Выбирайте шаблоны, добавляйте фото, цвета, иконки и создавайте визитку
+              под ваш персональный бренд.
+            </p>
+          </div>
+          <div className={classes.card}>
+            <h4 className={classes.textPurple}>QR + Мгновенный обмен</h4>
+            <p className={classes.textGray}>
+              Генерируйте QR для перехода на профиль и отправляйте визитку в пару
+              кликов.
+            </p>
+          </div>
+          <div className={classes.card}>
+            <h4 className={classes.textPurple}>Аналитика</h4>
+            <p className={classes.textGray}>
+              Смотрите, кто и где просматривает вашу визитку, какие ссылки кликают,
+              и улучшайте представление.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="mvp" className={classes.section}>
+        <h3 className={classes.sectionTitle}>MVP: мобильное приложение</h3>
+        <p className={classes.textGray}>
+          Первый релиз включает мобильное приложение на Flutter: сканирование QR,
+          обмен визитками, просмотр профилей и базовая статистика. Все основные
+          функции доступны бесплатно, премиум-дизайны и расширенная аналитика —
+          платно.
+        </p>
+
+        <div className={classes.grid2}>
+          <div className={classes.card}>
+            <h4 className={classes.textPurple}>Что входит в MVP</h4>
+            <ul className={classes.textGray}>
+              <li>Создание и редактирование визитки</li>
+              <li>Генерация QR и обмен</li>
+              <li>Сканер QR в приложении</li>
+              <li>Простая статистика просмотров</li>
+            </ul>
+          </div>
+          <div className={classes.card}>
+            <h4 className={classes.textPurple}>Технологии</h4>
+            <ul className={classes.textGray}>
+              <li>Backend: FastAPI + Django (авторизация)</li>
+              <li>Mobile: Flutter</li>
+              <li>DB: PostgreSQL</li>
+              <li>Хранение файлов: S3-совместимое хранилище</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="pricing" className={classes.section}>
+        <h3 className={classes.sectionTitle}>Тарифы</h3>
+        <p className={classes.textGray}>
+          Freemium-модель: базовые визитки бесплатно, платные функции для
+          профессионалов.
+        </p>
+
+        <div className={classes.grid3}>
+          <div className={classes.card}>
+            <h4>Free</h4>
+            <p className={classes.textGray}>
+              Одна визитка, стандартный шаблон, QR-обмен
+            </p>
+            <div className={classes.price}>0 ₽</div>
+            <ul className={classes.textGray}>
+              <li>Основной функционал</li>
+              <li>QR-генерация</li>
+              <li>Добавление в контакты</li>
+            </ul>
+            {/* <br /> */}
+            <button className={classes.buttonPrimary}>Начать бесплатно</button>
+          </div>
+
+          <div className={`${classes.card} ${classes.cardPro}`}>
+            <h4>Pro</h4>
+            <p className={classes.textGray}>
+              Премиум-дизайны, 3 визитки, расширенная аналитика
+            </p>
+            <div className={classes.price}>199 ₽/мес</div>
+            <ul className={classes.textGray}>
+              <li>3 кастомные визитки</li>
+              <li>Детальная аналитика</li>
+              <li>Приоритетная поддержка</li>
+            </ul>
+            {/* <br /> */}
+            <button className={classes.buttonPrimary}>Попробовать Pro</button>
+          </div>
+
+          <div className={classes.card}>
+            <h4>Business</h4>
+            <p className={classes.textGray}>
+              Командный план для небольших команд и агентств
+            </p>
+            <div className={classes.price}>699 ₽/мес</div>
+            <ul className={classes.textGray}>
+              <li>До 10 визиток</li>
+              <li>Командная аналитика</li>
+              <li>Экспорт CSV</li>
+            </ul>
+            {/* <br /> */}
+            <button className={classes.buttonSecondary}>
+              Запросить для команды
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="faq" className={classes.section}>
+        <h3 className={classes.sectionTitle}>Часто задаваемые вопросы</h3>
+        <div className={classes.faqList}>
+          <details className={classes.card}>
+            <summary className={classes.textPurple}>
+              Как быстро сменить визитку на мероприятии?
+            </summary>
+            <p className={classes.textGray}>
+              В мобильном приложении выберите нужную визитку и покажите QR —
+              другой человек отсканирует и добавит ваши контакты.
+            </p>
+          </details>
+          <details className={classes.card}>
+            <summary className={classes.textPurple}>
+              Безопасно ли хранить данные?
+            </summary>
+            <p className={classes.textGray}>
+              Да. В MVP мы храним минимальные данные, используем шифрование на
+              уровне хранилища и защиту доступа через OAuth2.
+            </p>
+          </details>
+          <details className={classes.card}>
+            <summary className={classes.textPurple}>
+              Можно ли интегрироваться с CRM?
+            </summary>
+            <p className={classes.textGray}>
+              Да — через API можно экспортировать контакты и события в любую CRM
+              систему.
+            </p>
+          </details>
+        </div>
+      </section>
+
+      <section className={classes.cta}>
+        <div className={classes.ctaInner}>
+          <h3 className={classes.sectionTitle}>Готовы упростить нетворкинг?</h3>
+          <p className={classes.textGray}>
+            Создайте первую визитку за минуту и начните обмениваться контактами
+            на следующем мероприятии.
+          </p>
+          <div className={classes.heroButtons}>
+            <a id="signup" className={classes.buttonPrimary}>
+              Создать <br /> визитку
+            </a>
+            <a href="#pricing" className={classes.buttonSecondary}>
+              Посмотреть тарифы
+            </a>
+          </div>
+          <p className={classes.textGraySmall}>
+            Freemium — начните бесплатно, платите только за премиум-функции.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer className={classes.footer}>
+      <div className={classes.footerInner}>
+        <div>© {new Date().getFullYear()} ConnectCard — Все права защищены</div>
+        <div className={classes.footerLinks}>
+          <a href="#">Политика конфиденциальности</a>
+          <a href="#">Условия использования</a>
+          <a href="#">Контакты</a>
         </div>
       </div>
-      <Typography
-        sx={{
-          fontSize: responsiveFontSize(14, 16, 1.5),
-          maxWidth: '600px',
-          margin: '0 auto',
-          color: '#fff',
-          opacity: 0.8,
-          mb: 4,
-        }}
-      >
-        Создавайте уникальные цифровые визитки нового поколения и делитесь контактами мгновенно через QR-код. Ваш инструмент для профессионального нетворкинга.
-      </Typography>
-      <motion.div className={classes.ctaContainer}>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <MyButton variant="primary" href="/registration">
-            <Link to="/registration" className="link">Создать визитку</Link>
-          </MyButton>
-        </motion.div>
-        {/* <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <MyButton variant="primary" href="/login">
-            Войти
-          </MyButton>
-        </motion.div> */}
-      </motion.div>
-    </motion.div>
-
-    <motion.div variants={containerVariants} initial="hidden" animate="visible">
-      <Grid container spacing={3} justifyContent="center">
-        <Grid item xs={12} md={6}>
-          <motion.div variants={childVariants} className={classes.card}>
-            <Typography
-              sx={{
-                fontWeight: 600,
-                fontSize: responsiveFontSize(18, 24, 2),
-                mb: 2,
-              }}
-            >
-              Возможности ConnectCard
-            </Typography>
-            <ul className={classes.list}>
-              <li><UserOutlined className={classes.icon} /> Стильные визитки с вашим дизайном</li>
-              <li><QrcodeOutlined className={classes.icon} /> Обмен контактами через QR-код</li>
-              <li><TeamOutlined className={classes.icon} /> Поиск по событиям и локациям</li>
-            </ul>
-          </motion.div>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <motion.div variants={childVariants} className={classes.card}>
-            <Typography
-              sx={{
-                fontWeight: 600,
-                fontSize: responsiveFontSize(18, 24, 2),
-                mb: 2,
-              }}
-            >
-              Почему выбирают нас
-            </Typography>
-            <ul className={classes.list}>
-              <li><GlobalOutlined className={classes.icon} /> Создано для России</li>
-              <li><FontAwesomeIcon icon={faPalette} className={classes.icon} /> Полная кастомизация</li>
-              <li><FontAwesomeIcon icon={faSave} className={classes.icon} /> Сохранение контактов</li>
-            </ul>
-          </motion.div>
-        </Grid>
-      </Grid>
-
-      <Grid container spacing={3} justifyContent="center" sx={{ mt: 3 }}>
-        <Grid item xs={12}>
-          <motion.div variants={childVariants} className={classes.card}>
-            <Typography
-              sx={{
-                fontWeight: 600,
-                fontSize: responsiveFontSize(18, 24, 2),
-                mb: 2,
-                textAlign: 'center',
-              }}
-            >
-              Отличия от других
-            </Typography>
-            <Grid container spacing={2} justifyContent="center">
-              <Grid item xs={12} sm={6}>
-                <Typography
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: responsiveFontSize(16, 18, 1.8),
-                    mb: 1,
-                  }}
-                >
-                  <div className={classes.title}>
-                        Конкуренты:
-                    </div>
-                </Typography>
-                <ul className={classes.list}>
-                  <li>❌ Ограниченный дизайн</li>
-                  <li>❌ Корпоративнфй фокус</li>
-                  <li>❌ Устаревший интерфейс</li>
-                </ul>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography
-                  sx={{
-                    fontWeight: 500,
-                    fontSize: responsiveFontSize(16, 18, 1.8),
-                    mb: 1,
-                  }}
-                >
-                <div className={classes.title}>
-                    Connect<span>Card</span>:
-                </div>
-                </Typography>
-                <ul className={classes.list}>
-                  <li><FontAwesomeIcon icon={faPalette} className={classes.icon} /> Свобода дизайна</li>
-                  <li><FontAwesomeIcon icon={faAddressCard} className={classes.icon} /> Множество визиток</li>
-                  <li><FontAwesomeIcon icon={faSearch} className={classes.icon} /> Интуитивный интерфейс</li>
-
-                </ul>
-              </Grid>
-            </Grid>
-          </motion.div>
-        </Grid>
-      </Grid>
-
-    
-      <motion.div variants={childVariants} sx={{ textAlign: 'center', mt: 3,  }}>
-        <motion.div className={classes.ctaContainer}>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Typography
-            sx={{
-            fontSize: responsiveFontSize(14, 16, 1.5),
-            maxWidth: '600px',
-            margin: '0 auto',
-            color: '#fff',
-            opacity: 0.8,
-            mb: 4,
-            }}
-        >
-            Станьте частью будущего нетворкинга — начните сейчас!
-        </Typography>
-
-            <MyButton variant="primary" href="/registration">
-                <Link to="/registration" className="link">Попробовать бесплатно</Link>
-            </MyButton>
-          </motion.div>
-        </motion.div>
-      </motion.div>
-    </motion.div>
+    </footer>
   </div>
 );
 
