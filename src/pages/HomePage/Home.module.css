@@ -360,7 +360,7 @@
   bottom: 0;
   left: 50%;
   width: 2px;
-  background: linear-gradient(to bottom, #22c55e 0%, #22c55e 40%, #eab308 40%, #eab308 50%, #6b7280 50%, #6b7280 100%);
+  background: linear-gradient(to bottom, #a855f7 0%, #a855f7 40%, #eab308 40%, #eab308 50%, #6b7280 50%, #6b7280 100%);
   transform: translateX(-50%);
 }
 
@@ -428,8 +428,8 @@
 }
 
 .timelineItem.completed .timelineIcon {
-  border-color: #22c55e;
-  background-color: #22c55e;
+  border-color: #a855f7;
+  background-color: #a855f7;
 }
 
 .timelineItem.inProgress .timelineIcon {
