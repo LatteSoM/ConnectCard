@@ -294,7 +294,8 @@ class _ListOfVisitCardState extends State<ListOfVisitCard> {
     });
 
     if (selected == 'share') {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => ShareVisit(cardId: index,)));
+      // Navigator.push(context, MaterialPageRoute(builder: (context) => ShareVisit(cardId: index,)));
+      Navigator.push(context, MaterialPageRoute(builder: (context) => CardPreviewPage(cardId: index)));
     } else if (selected == 'delete') {
       showConfirmDeleteDialog(context, index);
     }

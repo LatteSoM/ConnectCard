@@ -1312,12 +1312,22 @@ class EditingScope extends InheritedWidget{
 }
 
 
+  enum ShareType {
+    email,
+    phone,
+    website,
+    github,
+    telegram,
+    linkedin,
+    twitter,
+  }
+
 class InfoCard extends StatelessWidget {
   final Widget icon;
   final String title;
   final String subtitle;
   final bool fullWidth;
-  final String scheme;
+  final ShareType? shareType;
 
   const InfoCard({
     super.key,
@@ -1325,19 +1335,19 @@ class InfoCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     this.fullWidth = false,
-    this.scheme = '',
+    this.shareType,
   });
 
-  String? encodeQueryParameters(Map<String, String> params) {
-    return params.entries
-        .map((MapEntry<String, String> e) =>
-            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-        .join('&');
-  }
 
-  Future<void> _launchUri(String scheme, String path) async {
-    final Uri launchUri = _buildUri(scheme, path);
+  Future<void> _launchContact() async {
+    if(shareType == null) return;
+    final Uri? launchUri = _buildUri(shareType!, subtitle);
     
+    if (launchUri == null) {
+      print("Невозможно построить URI для: $subtitle");
+      return;
+    }
+
     if (!await canLaunchUrl(launchUri)) {
       print("Невозможно выполнить запуск: $launchUri");
       return;
@@ -1350,21 +1360,70 @@ class InfoCard extends StatelessWidget {
     }
   }
 
-  Uri _buildUri(String scheme, String path) {
-    if (scheme == 'mailto') {
-      return Uri(
-        scheme: scheme,
-        path: path,
-        query: encodeQueryParameters(<String, String>{
-          'subject': 'Связь через ConnectCard',
-        }),
-      );
+  Uri? _buildUri(ShareType type, String value) {
+    switch (type) {
+      case ShareType.email:
+        return Uri(
+          scheme: 'mailto',
+          path: value,
+          query: _encodeQueryParameters(<String, String>{
+            'subject': 'Связь через ConnectCard',
+          }),
+        );
+      
+      case ShareType.phone:
+        // Убираем все нецифровые символы кроме +
+        final cleanedPhone = value.replaceAll(RegExp(r'[^\d+]'), '');
+        return Uri(scheme: 'tel', path: cleanedPhone);
+      
+      case ShareType.website:
+        String url = value;
+        if (!url.startsWith(RegExp(r'https?://'))) {
+          url = 'https://$url';
+        }
+        return Uri.parse(url);
+      
+      case ShareType.telegram:
+        // Поддержка разных форматов: @username, t.me/username, https://t.me/username
+        String username = value;
+        if (username.startsWith('@')) {
+          username = username.substring(1);
+        } else if (username.contains('t.me/')) {
+          username = username.split('t.me/').last;
+        }
+        return Uri(scheme: 'https', host: 't.me', path: username);
+      
+      
+      case ShareType.github:
+        String username = value;
+        if (username.startsWith('@')) username = username.substring(1);
+        if (username.contains('github.com/')) {
+          username = username.split('github.com/').last;
+        }
+        return Uri(scheme: 'https', host: 'github.com', path: username);
+      
+      case ShareType.linkedin:
+        String profile = value;
+        if (profile.contains('linkedin.com/in/')) {
+          profile = profile.split('linkedin.com/in/').last;
+        }
+        return Uri(scheme: 'https', host: 'linkedin.com', path: 'in/$profile');
+      
+      case ShareType.twitter:
+        String username = value;
+        if (username.startsWith('@')) username = username.substring(1);
+        if (username.contains('twitter.com/')) {
+          username = username.split('twitter.com/').last;
+        }
+        return Uri(scheme: 'https', host: 'twitter.com', path: username);
+      
     }
-    
-    return Uri(
-      scheme: scheme,
-      path: path,
-    );
+  }
+
+  String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
   }
 
   @override
@@ -1375,7 +1434,7 @@ class InfoCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        _launchUri(scheme, subtitle);
+        shareType == null ? null :_launchContact();
       },
       child: Container(
         width: cardWidth,

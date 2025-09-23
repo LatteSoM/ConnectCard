@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:connect_card/screens/card_test_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
@@ -18,6 +19,7 @@ class _QRScanTestState extends State<QrScanTest> {
 
   bool isFront = true;
   bool isToggleFlash = false;
+
 
   @override
   void reassemble() {
@@ -41,6 +43,20 @@ class _QRScanTestState extends State<QrScanTest> {
     setState(() {
       isToggleFlash = !isToggleFlash;
     });
+  }
+
+  void handleScannedData() {
+    if(result != null) {
+      final scannedUrl = result!.code.toString();
+      if(scannedUrl.startsWith('http://45.12.255.231:8000/')) {
+        final uri = Uri.parse(scannedUrl);
+        final pathSegments = uri.pathSegments;
+        if(pathSegments.length >= 2) {
+          Navigator.push(context, MaterialPageRoute(builder: (context) => CardPreviewPage(cardId: pathSegments[1],)));
+        }
+      }
+    }
+
   }
 
   @override

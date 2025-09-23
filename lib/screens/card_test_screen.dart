@@ -1,14 +1,21 @@
+import 'dart:convert';
+
+import 'package:connect_card/models/user_model.dart';
 import 'package:connect_card/screens/visit_card_profile.dart';
 import 'package:connect_card/utils/snackbar_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:icons_plus/icons_plus.dart';
 import 'dart:math';
+
+import 'package:http/http.dart' as http;
 
 import 'package:url_launcher/url_launcher.dart';
 
 class CardPreviewPage extends StatefulWidget {
-  final VisitCard1 visitCard;
-  const CardPreviewPage({super.key, required this.visitCard});
+  final String cardId;
+  const CardPreviewPage({super.key, required this.cardId});
 
   @override
   State<CardPreviewPage> createState() => _CardPreviewPageState();
@@ -24,14 +31,54 @@ class _CardPreviewPageState extends State<CardPreviewPage>
   double _screenWidth = 0;
   double _screenHeight = 0;
 
+  final storage = FlutterSecureStorage();
+  final baseUrl = dotenv.env['BASE_URL'];
+
+  String? _token;
+
+  Map<String, String> get headers {
+    return {
+      'Authorization': 'Bearer $_token',
+      'Content-Type': 'application/json',
+    };
+  }
+
+  BusinessCard? card;
+
   @override
   void initState() {
     super.initState();
+    _initializeData();
     // Контроллер для подпрыгивания карточки и движения частиц
     _controller = AnimationController(
       vsync: this,
       duration: Duration(seconds: 3),
     )..repeat(reverse: true);
+  }
+
+  Future<void> _initializeData() async{
+    await _loadCredentials();
+    await loadCard();
+  }
+
+  Future<void> loadCard() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/cards/${widget.cardId}'),
+      headers: headers
+    );
+
+    if(response.statusCode == 200) {
+      final jsonData = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      setState(() {
+        card = BusinessCard.fromJson(jsonData);
+      });
+    } else {
+      SnackbarHelper.showMessage(context, 'Извините, произошла ошибка', isSuccess: false);
+    }
+  }
+
+  Future<void> _loadCredentials() async {
+    _token = await storage.read(key: 'token');
   }
 
   void _initParticles(BoxConstraints constraints) {
@@ -97,62 +144,96 @@ class _CardPreviewPageState extends State<CardPreviewPage>
               ),
             ),
 
-            // Частицы
             _buildParticles(constraints),
 
-            // Контент
-            Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Подпрыгивающая карточка
-                  AnimatedBuilder(
-                    animation: _controller,
-                    builder: (context, child) {
-                      double lift = sin(_controller.value * 2 * pi) * 6;
-                      return Transform.translate(
-                        offset: Offset(0, -lift),
-                        child: child,
-                      );
-                    },
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).push(
-                          ScalePageRoute(
-                              page: FullCardPage(visitCard: widget.visitCard)),
+            if (card != null)
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Подпрыгивающая карточка
+                    AnimatedBuilder(
+                      animation: _controller,
+                      builder: (context, child) {
+                        double lift = sin(_controller.value * 2 * pi) * 6;
+                        return Transform.translate(
+                          offset: Offset(0, -lift),
+                          child: child,
                         );
                       },
-                      child: widget.visitCard,
-                    ),
-                  ),
-                  SizedBox(height: 24),
-
-                  // Текст
-                  FadeTransition(
-                    opacity: Tween(begin: 0.0, end: 1.0).animate(
-                      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-                    ),
-                    child: Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Нажмите, чтобы увидеть подробную информацию',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            ScalePageRoute(
+                              page: FullCardPage(
+                                visitCard: VisitCard1(
+                                  fullName: card!.fullname,
+                                  position: card!.position ?? '',
+                                  company: card!.company ?? '',
+                                  socialLinks: card!.linkWidgets,
+                                  contactInfos: card!.contactInfos,
+                                  avatar: card!.avatar ?? '',
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        child: VisitCard1(
+                          fullName: card!.fullname,
+                          position: card!.position ?? '',
+                          company: card!.company ?? '',
+                          socialLinks: card!.linkWidgets,
+                          contactInfos: card!.contactInfos,
+                          avatar: card!.avatar ?? '',
                         ),
-                        textAlign: TextAlign.center,
                       ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 24),
+
+                    // Текст
+                    FadeTransition(
+                      opacity: Tween(begin: 0.0, end: 1.0).animate(
+                        CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+                      ),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Нажмите, чтобы увидеть подробную информацию',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+
+            // Индикатор загрузки или сообщение, если карточка еще не загружена
+            if (card == null)
+              Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: Colors.white),
+                    SizedBox(height: 16),
+                    Text(
+                      'Загрузка карточки...',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
@@ -201,14 +282,6 @@ class _Particle {
     if (y > height) y -= height;
   }
 }
-
-
-
-
-
-
-
-
 
 
 class FullCardPage extends StatelessWidget {
@@ -295,21 +368,21 @@ class FullCardPage extends StatelessWidget {
                           icon: Icon(Icons.email_outlined, color: Colors.white, size: 32),
                           title: "Email",
                           subtitle: visitCard.contactInfos.firstWhere((item) => item.name == 'email').description!,
-                          scheme: 'mailto',
+                          shareType: ShareType.email,
                         ),
                       if (visitCard.contactInfos.any((item) => item.name == 'phone'))
                         _buildInfoCard(
                           icon: Icon(Icons.phone, color: Colors.white, size: 32),
                           title: "Телефон",
                           subtitle: visitCard.contactInfos.firstWhere((item) => item.name == 'phone').description!,
-                          scheme: 'tel'
+                          shareType: ShareType.phone,
                         ),
                       if (visitCard.contactInfos.any((item) => item.name == 'website'))
                         _buildInfoCard(
                           icon: Icon(Icons.language, color: Colors.white, size: 32),
                           title: "Сайт",
                           subtitle: visitCard.contactInfos.firstWhere((item) => item.name == 'website').description!,
-                          scheme: 'https'
+                          shareType: ShareType.website
                         ),
                       
                     ],
@@ -330,24 +403,28 @@ class FullCardPage extends StatelessWidget {
                         icon: Icon(BoxIcons.bxl_telegram, color: Colors.white, size: 24),
                         title: "Телеграм",
                         subtitle: visitCard.socialLinks.firstWhere((item) => item.name == 'Telegram').link,
+                        shareType: ShareType.telegram,
                       ),
                       if (visitCard.socialLinks.any((item) => item.name == 'LinkedIn'))
                       _buildSocialCard(
                         icon: Icon(EvaIcons.linkedin, color: Colors.white, size: 24),
                         title: "LinkedIn",
                         subtitle: visitCard.socialLinks.firstWhere((item) => item.name == 'LinkedIn').link,
+                        shareType: ShareType.linkedin,
                       ),
                       if (visitCard.socialLinks.any((item) => item.name == 'GitHub'))
                       _buildSocialCard(
                         icon: Icon(Bootstrap.github, color: Colors.white, size: 24),
                         title: "GitHub",
                         subtitle: visitCard.socialLinks.firstWhere((item) => item.name == 'GitHub').link,
+                        shareType: ShareType.github,
                       ),
                       if (visitCard.socialLinks.any((item) => item.name == 'Twitter'))
                       _buildSocialCard(
                         icon: Icon(Bootstrap.twitter_x, color: Colors.white, size: 24),
                         title: "X",
                         subtitle: visitCard.socialLinks.firstWhere((item) => item.name == 'Twitter').link,
+                        shareType: ShareType.twitter,
                       ),
                     ],
                   ),
@@ -362,9 +439,27 @@ class FullCardPage extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    return CircleAvatar(
-      backgroundColor: Colors.white,
-      radius: 55,
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        visitCard.avatar != null
+            ? CircleAvatar(
+              radius: 52,
+              backgroundImage: NetworkImage('$baseUrl${visitCard.avatar}'),
+              onBackgroundImageError: (exception, stackTrace) {
+
+              },
+            )
+            : CircleAvatar(
+              radius: 52,
+              backgroundColor: Colors.grey[300],
+              child: const Icon(
+                Icons.person,
+                size: 52,
+                color: Colors.white,
+              ),
+            ),
+      ],
     );
   }
 
@@ -395,7 +490,7 @@ class FullCardPage extends StatelessWidget {
     required Widget icon,
     required String title,
     required String subtitle,
-    String scheme = '',
+    required ShareType shareType,
   }) {
     return Stack(
       children: [
@@ -404,7 +499,7 @@ class FullCardPage extends StatelessWidget {
           title: title,
           subtitle: subtitle,
           fullWidth: true,
-          scheme: scheme,
+          shareType: shareType,
         ),
       ],
     );
@@ -414,6 +509,7 @@ class FullCardPage extends StatelessWidget {
     required Widget icon,
     required String title,
     required String subtitle,
+    required ShareType shareType,
   }) {
     return Stack(
       children: [
@@ -421,6 +517,7 @@ class FullCardPage extends StatelessWidget {
           icon: icon,
           title: title,
           subtitle: subtitle,
+          shareType: shareType,
         ),
       ],
     );
