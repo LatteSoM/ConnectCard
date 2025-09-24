@@ -4,9 +4,12 @@ import { ClockCircleOutlined } from '@ant-design/icons';
 import { MenuOutlined, CloseOutlined } from '@ant-design/icons';
 import logo from "../../assets/LogoNight.svg";
 import ava from "../../assets/testusericon1.jpg"
+import { useNavigate } from 'react-router-dom';
+
 
 const Home = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -37,7 +40,7 @@ const Home = () => {
             <a href="#pricing">Тарифы</a>
             <a href="#mvp">MVP</a>
             <a href="#faq">FAQ</a>
-            <button className={classes.buttonPrimary}>Войти</button>
+            <button onClick={()=> navigate('/login')} className={classes.buttonPrimary}>Войти</button>
           </nav>
         </div>
       </header>
@@ -88,7 +91,7 @@ const Home = () => {
             </ul>
 
             <div className={classes.heroButtons}>
-              <a href="#signup" className={classes.buttonPrimary}>
+              <a href="/login" className={classes.buttonPrimary}>
                 Попробовать бесплатно
               </a>
               <a href="#pricing" className={classes.buttonSecondary}>
@@ -229,7 +232,7 @@ const Home = () => {
               <p className={classes.textGray}>
                 Командный план для небольших команд и агентств
               </p>
-              <div className={classes.price}>699 ₽/мес</div>
+              <div className={classes.price}>Цена договорная</div>
               <ul className={classes.textGray}>
                 <li>До 10 визиток</li>
                 <li>Командная аналитика</li>
@@ -386,11 +389,11 @@ const Home = () => {
               на следующем мероприятии.
             </p>
             <div className={classes.heroButtons}>
-              <button className={classes.buttonPrimary}>
+              <button onClick={()=> navigate('/login')} className={classes.buttonPrimary}>
                 Создать визитку
               </button>
               <a href="#pricing" className={classes.buttonSecondary}>
-                К тарифам
+                Перейти к тарифам
               </a>
             </div>
             <p className={classes.textGraySmall}>
